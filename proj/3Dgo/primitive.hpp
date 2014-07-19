@@ -4,6 +4,9 @@
 #include "algebra.hpp"
 #include "material.hpp"
 #include <GL/glu.h>
+#include <list>
+
+#define GRAVITY -20.0
 
 class RayHit {
 public:
@@ -23,17 +26,21 @@ public:
 
 class Object {
 public:
-  Object(std::string name, Matrix4x4 t, Matrix4x4 ti, Matrix4x4 tit, Material* m, Primitive* p, bool dyn);
+  Object(std::string name, Point3D pos, Vector3D scale, Material* m, Primitive* p, bool dyn);
   RayHit* raycast(Point3D from, Vector3D ray);
   void render();
+  void move(double dt, std::list<Object*>& objects);
+
   std::string m_name;
   Matrix4x4 transform;
   bool dynamic;
+  Point3D m_pos;
+  Vector3D m_vel;
+  Vector3D m_scale;
+  Primitive* m_primitive;
 private:
   Matrix4x4 inversetransform;
-  Matrix4x4 inversetransposed;
   Material* m_material;
-  Primitive* m_primitive;
 };
 
 class Sphere : public Primitive {
@@ -85,9 +92,9 @@ public:
   virtual RayHit* raycast(Point3D from, Vector3D ray, Material* m_material, bool backfaces = false);
   virtual void render();
 
-private:
   Point3D m_pos;
   Vector3D m_size;
+private:
 };
 
 #endif

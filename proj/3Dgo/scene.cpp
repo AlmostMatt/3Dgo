@@ -133,7 +133,7 @@ void GeometryNode::getobjectlist(std::list<Object*>& objects, Matrix4x4 t, Matri
   for (ChildList::const_iterator it = m_children.begin(); it != m_children.end(); it++) {
     (*it)->getobjectlist(objects, newt, newti, newtit);
   }
-  objects.push_back(new Object(m_name, newt, newti, newtit, m_material, m_primitive, dynamic));
+  //objects.push_back(new Object(m_name, newt, newti, newtit, m_material, m_primitive, dynamic));
 }
 
 RayHit* GeometryNode::raycast(Point3D from, Vector3D ray)

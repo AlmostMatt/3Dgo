@@ -4,7 +4,7 @@
 //
 // algebra.hpp/algebra.cpp
 //
-// Classes and functions for manipulating points, vectors, matrices, 
+// Classes and functions for manipulating points, vectors, matrices,
 // and colours.  You probably won't need to modify anything in these
 // two files.
 //
@@ -32,7 +32,7 @@ public:
     v_[1] = 0.0;
   }
   Point2D(double x, double y)
-  { 
+  {
     v_[0] = x;
     v_[1] = y;
   }
@@ -49,11 +49,11 @@ public:
     return *this;
   }
 
-  double& operator[](size_t idx) 
+  double& operator[](size_t idx)
   {
     return v_[ idx ];
   }
-  double operator[](size_t idx) const 
+  double operator[](size_t idx) const
   {
     return v_[ idx ];
   }
@@ -72,7 +72,7 @@ public:
     v_[2] = 0.0;
   }
   Point3D(double x, double y, double z)
-  { 
+  {
     v_[0] = x;
     v_[1] = y;
     v_[2] = z;
@@ -92,11 +92,11 @@ public:
     return *this;
   }
 
-  double& operator[](size_t idx) 
+  double& operator[](size_t idx)
   {
     return v_[ idx ];
   }
-  double operator[](size_t idx) const 
+  double operator[](size_t idx) const
   {
     return v_[ idx ];
   }
@@ -115,7 +115,7 @@ public:
     v_[2] = 0.0;
   }
   Vector3D(double x, double y, double z)
-  { 
+  {
     v_[0] = x;
     v_[1] = y;
     v_[2] = z;
@@ -135,11 +135,11 @@ public:
     return *this;
   }
 
-  double& operator[](size_t idx) 
+  double& operator[](size_t idx)
   {
     return v_[ idx ];
   }
-  double operator[](size_t idx) const 
+  double operator[](size_t idx) const
   {
     return v_[ idx ];
   }
@@ -169,7 +169,7 @@ public:
                     v_[2]*other[0] - v_[0]*other[2],
                     v_[0]*other[1] - v_[1]*other[0]);
   }
-  
+
   Vector3D proj(const Vector3D& other );
   Vector3D reflect(const Vector3D& norm );
 
@@ -177,9 +177,37 @@ private:
   double v_[3];
 };
 
+struct Intersection {
+  Intersection()
+    : isNull(true)
+  {}
+  Intersection(Point3D p, Vector3D n, double d)
+    : pos(p), norm(n), depth(d), isNull(false)
+  {}
+  Point3D pos;
+  Vector3D norm;
+  double depth;
+  bool isNull;
+};
+
 inline Vector3D operator *(double s, const Vector3D& v)
 {
   return Vector3D(s*v[0], s*v[1], s*v[2]);
+}
+
+inline Vector3D operator /(double s, const Vector3D& v)
+{
+  return Vector3D(s/v[0], s/v[1], s/v[2]);
+}
+
+inline Vector3D operator *(const Vector3D& a, const Vector3D& b)
+{
+  return Vector3D(a[0]*b[0], a[1]*b[1], a[2]*b[2]);
+}
+
+inline Vector3D operator /(const Vector3D& a, const Vector3D& b)
+{
+  return Vector3D(a[0]/b[0], a[1]/b[1], a[2]/b[2]);
 }
 
 inline Vector3D operator +(const Vector3D& a, const Vector3D& b)
@@ -212,7 +240,7 @@ inline Point3D operator -(const Point3D& a, const Vector3D& b)
   return Point3D(a[0]-b[0], a[1]-b[1], a[2]-b[2]);
 }
 
-inline Vector3D cross(const Vector3D& a, const Vector3D& b) 
+inline Vector3D cross(const Vector3D& a, const Vector3D& b)
 {
   return a.cross(b);
 }
@@ -245,7 +273,7 @@ public:
     v_[3] = 0.0;
   }
   Vector4D(double x, double y, double z, double w)
-  { 
+  {
     v_[0] = x;
     v_[1] = y;
     v_[2] = z;
@@ -268,11 +296,11 @@ public:
     return *this;
   }
 
-  double& operator[](size_t idx) 
+  double& operator[](size_t idx)
   {
     return v_[ idx ];
   }
-  double operator[](size_t idx) const 
+  double operator[](size_t idx) const
   {
     return v_[ idx ];
   }
@@ -297,28 +325,28 @@ public:
   {
     std::copy(other.v_, other.v_+16, v_);
   }
-  Matrix4x4(const Vector4D row1, const Vector4D row2, const Vector4D row3, 
+  Matrix4x4(const Vector4D row1, const Vector4D row2, const Vector4D row3,
              const Vector4D row4)
   {
-    v_[0] = row1[0]; 
-    v_[1] = row1[1]; 
-    v_[2] = row1[2]; 
-    v_[3] = row1[3]; 
+    v_[0] = row1[0];
+    v_[1] = row1[1];
+    v_[2] = row1[2];
+    v_[3] = row1[3];
 
-    v_[4] = row2[0]; 
-    v_[5] = row2[1]; 
-    v_[6] = row2[2]; 
-    v_[7] = row2[3]; 
+    v_[4] = row2[0];
+    v_[5] = row2[1];
+    v_[6] = row2[2];
+    v_[7] = row2[3];
 
-    v_[8] = row3[0]; 
-    v_[9] = row3[1]; 
-    v_[10] = row3[2]; 
-    v_[11] = row3[3]; 
+    v_[8] = row3[0];
+    v_[9] = row3[1];
+    v_[10] = row3[2];
+    v_[11] = row3[3];
 
-    v_[12] = row4[0]; 
-    v_[13] = row4[1]; 
-    v_[14] = row4[2]; 
-    v_[15] = row4[3]; 
+    v_[12] = row4[0];
+    v_[13] = row4[1];
+    v_[14] = row4[2];
+    v_[15] = row4[3];
   }
   Matrix4x4(double *vals)
   {
@@ -335,7 +363,7 @@ public:
   {
     return Vector4D(v_[4*row], v_[4*row+1], v_[4*row+2], v_[4*row+3]);
   }
-  double *getRow(size_t row) 
+  double *getRow(size_t row)
   {
     return (double*)v_ + 4*row;
   }
@@ -349,14 +377,14 @@ public:
   {
     return getRow(row);
   }
-  double *operator[](size_t row) 
+  double *operator[](size_t row)
   {
     return getRow(row);
   }
 
   Matrix4x4 transpose() const
   {
-    return Matrix4x4(getColumn(0), getColumn(1), 
+    return Matrix4x4(getColumn(0), getColumn(1),
                       getColumn(2), getColumn(3));
   }
   Matrix4x4 invert() const;
@@ -369,7 +397,7 @@ public:
   {
     return begin() + 16;
   }
-		
+
 private:
   double v_[16];
 };
@@ -380,9 +408,9 @@ inline Matrix4x4 operator *(const Matrix4x4& a, const Matrix4x4& b)
 
   for(size_t i = 0; i < 4; ++i) {
     Vector4D row = a.getRow(i);
-		
+
     for(size_t j = 0; j < 4; ++j) {
-      ret[i][j] = row[0] * b[0][j] + row[1] * b[1][j] + 
+      ret[i][j] = row[0] * b[0][j] + row[1] * b[1][j] +
         row[2] * b[2][j] + row[3] * b[3][j];
     }
   }
@@ -416,13 +444,13 @@ inline Vector3D transNorm(const Matrix4x4& M, const Vector3D& n)
 
 inline std::ostream& operator <<(std::ostream& os, const Matrix4x4& M)
 {
-  return os << "[" << M[0][0] << " " << M[0][1] << " " 
+  return os << "[" << M[0][0] << " " << M[0][1] << " "
             << M[0][2] << " " << M[0][3] << "]" << std::endl
-            << "[" << M[1][0] << " " << M[1][1] << " " 
+            << "[" << M[1][0] << " " << M[1][1] << " "
             << M[1][2] << " " << M[1][3] << "]" << std::endl
-            << "[" << M[2][0] << " " << M[2][1] << " " 
+            << "[" << M[2][0] << " " << M[2][1] << " "
             << M[2][2] << " " << M[2][3] << "]" << std::endl
-            << "[" << M[3][0] << " " << M[3][1] << " " 
+            << "[" << M[3][0] << " " << M[3][1] << " "
             << M[3][2] << " " << M[3][3] << "]";
 }
 
@@ -453,16 +481,16 @@ public:
     return *this;
   }
 
-  double R() const 
-  { 
+  double R() const
+  {
     return r_;
   }
-  double G() const 
-  { 
+  double G() const
+  {
     return g_;
   }
-  double B() const 
-  { 
+  double B() const
+  {
     return b_;
   }
 
@@ -491,5 +519,13 @@ inline std::ostream& operator <<(std::ostream& os, const Colour& c)
 {
   return os << "c<" << c.R() << "," << c.G() << "," << c.B() << ">";
 }
+
+Matrix4x4 rotation(char axis, double angle);
+
+Matrix4x4 scaling(const Vector3D& amount);
+
+Matrix4x4 translation(const Point3D& amount);
+
+Intersection spherePlane(Point3D spherepos, Vector3D spherescale, Point3D pt1, Vector3D v1, Vector3D v2);
 
 #endif // CS488_ALGEBRA_HPP

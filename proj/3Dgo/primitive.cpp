@@ -8,15 +8,72 @@ RayHit::RayHit(double d, Point3D p, Material* m, Vector3D n)
 {
 }
 
-Object::Object(std::string name, Matrix4x4 t, Matrix4x4 ti, Matrix4x4 tit, Material* m, Primitive* p, bool dyn)
+Object::Object(std::string name, Point3D pos, Vector3D scale, Material* m, Primitive* p, bool dyn)
   : m_name(name)
-  , transform(t)
-  , inversetransform(ti)
-  , inversetransposed(tit)
   , m_material(m)
   , m_primitive(p)
   , dynamic(dyn)
+  , m_pos(pos)
+  , m_vel(0.0, 0.0, 0.0)
+  , m_scale(scale)
 {
+  transform = translation(m_pos) * scaling(m_scale);// * rotation
+  inversetransform = transform.invert();
+}
+
+void Object::move(double dt, std::list<Object*>& objects) {
+  if (dynamic) {
+    //collision check
+    //gravity // input acceleration
+    m_vel = m_vel + Vector3D(0, GRAVITY * dt, 0);
+    //dt
+    Point3D pos2 = m_pos + (dt * m_vel);
+    // collision check
+    NonhierBox * box1 = dynamic_cast<NonhierBox*> (m_primitive);
+    Sphere* sphere1 = dynamic_cast<Sphere*> (m_primitive);
+
+    // only collide with dynamic objects later in the list
+    bool foundThis = false;
+    for (std::list<Object*>::const_iterator I = objects.begin(); I != objects.end(); ++I) {
+      Object* obj2 = *I;
+      Point3D obj2pos = obj2->m_pos;
+      Vector3D relvel = m_vel - obj2->m_vel; // how obj1 is moving relative to object 2
+      if (obj2 == this) {
+        foundThis = true;
+      } else if (obj2 != this) {
+        if (foundThis || !obj2->dynamic) {
+          // the only scaled objects are the ellipsoids. Apply the same inverse scale to all objects or create an ellipsoid class
+          NonhierBox * box2 = dynamic_cast<NonhierBox*> (obj2->m_primitive);
+          Sphere* sphere2 = dynamic_cast<Sphere*> (obj2->m_primitive);
+          if (sphere1 != NULL && box2 != NULL) {
+            // consider pos of this relative to pos of sphere
+            Intersection i = spherePlane(pos2, m_scale, obj2pos + Vector3D(0.0, box2->m_size[1], 0.0), Vector3D(box2->m_size[0], 0.0, 0.0), Vector3D(0, 0, box2->m_size[2]));
+            if (!i.isNull) {
+              if (i.norm.dot(relvel) < 0) { // collision normal is facing away from the relative motion
+                m_vel = m_vel - 1.2 * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
+                //m_vel = Vector3D(0,0,0);
+                pos2 = m_pos;//
+                //pos2 = pos2 + i.norm.scaleTo(i.depth);
+              }
+            }
+            // find the closest intersection
+            //Vector3D diff = intersect + obj2pos;
+            //double dd = diff.length2();
+          } else {
+            // for now, do nothing. Add other types of collisions later.
+            // dynamic collision should change the velocity of both entities
+          }
+        }
+      }
+      //std::cout << "Object " << obj->m_name << " has transform:\n" << obj->transform << "\n";
+    }
+    m_pos = pos2;
+    // if moved
+    if (m_vel.length2() > 0.0) {
+      transform = translation(m_pos) * scaling(m_scale);// * rotation
+      inversetransform = transform.invert();
+    }
+  }
 }
 
 void Object::render() {

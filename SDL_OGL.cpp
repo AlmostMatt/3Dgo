@@ -19,28 +19,29 @@
 
 
 void ReSizeGLScene(GLsizei width, GLsizei height){
-
+    
     // Reset The Current Viewport
-    glViewport(0,0,width,height);
+    glViewport(0,0,width,height);	
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
+    glMatrixMode(GL_PROJECTION);					
+    glLoadIdentity();									
+
     // Calculate The Aspect Ratio Of The Window
     gluPerspective(40.0, (GLfloat)width/(GLfloat)height, 0.1, 1000.0);
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);							
+    glLoadIdentity();								
 
 }
 
 
 int InitGLLights(){
-    GLfloat light_position1[] = {10, 30, 20, 1};
-    GLfloat light1[] = {0.8, 0.8, 0.8, 1.0};
+    GLfloat light_position1[] = {50, 50, 0, 1};
+    GLfloat light1[] = {0.5, 0.5, 0.5, 1};
     GLfloat light2[] = {0.5, 0.5, .5, 1.0};
     GLfloat zero[] = {0, 0, 0 , 0};
 
-    // setup
+    // setup 
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
 
@@ -59,14 +60,14 @@ int InitGL(){
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_NORMALIZE);
 	glShadeModel(GL_SMOOTH);
-	//glEnable(GL_COLOR_MATERIAL);
+	glEnable(GL_COLOR_MATERIAL);
 
 	// Black Background
-	glClearColor(0.00f, 0.80f, 0.80f, 0.0f);
-
-	glEnable(GL_DEPTH_TEST);
-
-	//glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	glClearColor(0.00f, 0.80f, 0.80f, 0.0f);			
+	
+	glEnable(GL_DEPTH_TEST);					
+	
+	//glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	
 
 	// initialize the lighs
 	InitGLLights();
@@ -103,12 +104,12 @@ int CreateGLWindow(char* title, int width, int height, int bits, int fullscreenf
 
 	SDL_GL_GetAttribute( SDL_GL_STENCIL_SIZE, &size);
 
-	ReSizeGLScene(width, height);
+	ReSizeGLScene(width, height);						
 
 
 	if (!InitGL()){
 		KillGLWindow();
-		return 0;
+		return 0;		
 	}
 
 	return 1;

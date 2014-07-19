@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1405032684 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\main.cpp
+1405733025 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\main.cpp
 	"SDL_OGL.h"
 	"SoundManager.h"
 	"scene.hpp"
@@ -271,7 +271,7 @@
 1325742239 c:\program files (x86)\codeblocks\mingw\include\sdl\sdl_types.h
 	"SDL_stdinc.h"
 
-1405032401 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\sdl_ogl.cpp
+1405720211 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\sdl_ogl.cpp
 	"SDL_OGL.h"
 	<stdio.h>
 
@@ -279,10 +279,10 @@
 	"SoundManager.h"
 	<stdlib.h>
 
-1404881425 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\algebra.cpp
+1405731812 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\algebra.cpp
 	"algebra.hpp"
 
-1404881437 c:\users\matthew\documents\github\3dgo\proj\3dgo\algebra.hpp
+1405731639 c:\users\matthew\documents\github\3dgo\proj\3dgo\algebra.hpp
 	<iostream>
 	<algorithm>
 	<cmath>
@@ -293,10 +293,11 @@
 	"primitive.hpp"
 	"material.hpp"
 
-1405031480 c:\users\matthew\documents\github\3dgo\proj\3dgo\primitive.hpp
+1405724056 c:\users\matthew\documents\github\3dgo\proj\3dgo\primitive.hpp
 	"algebra.hpp"
 	"material.hpp"
 	<GL/glu.h>
+	<list>
 
 1404939933 c:\users\matthew\documents\github\3dgo\proj\3dgo\material.hpp
 	"algebra.hpp"
@@ -315,10 +316,10 @@
 	"primitive.hpp"
 	"algebra.hpp"
 
-1405031739 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\scene.cpp
+1405719754 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\scene.cpp
 	"scene.hpp"
 	<iostream>
 
-1405032530 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\primitive.cpp
+1405732955 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\primitive.cpp
 	"primitive.hpp"
 

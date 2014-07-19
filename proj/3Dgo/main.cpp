@@ -17,37 +17,32 @@
 #include "SDL_OGL.h"
 #include "SoundManager.h"
 #include "scene.hpp"
-#define MICKEY 1
+
+const Uint32 fps = 60;
+const Uint32 frameDuration = 1000 / fps;
+
 float xpos = 0, ypos = 0;
 int oldx = 0, oldy = 0;
 
 int music_on = 0;
 bool done = false;
 std::list<Object*> objects;
+Object* selected;
+Object* hover;
 
-void makeMickey()
-	{
-      GLUquadricObj* qsphere = gluNewQuadric();
-      glNewList(MICKEY, GL_COMPILE);
-
-    	gluQuadricDrawStyle(qsphere, GLU_FILL);
-    	gluQuadricNormals(qsphere, GLU_SMOOTH);
-    	gluQuadricOrientation(qsphere, GLU_OUTSIDE);
-    	gluQuadricTexture(qsphere, GL_FALSE);
-
-    	glColor3f(1,1,0);
-    	gluSphere(qsphere, 13, 20, 20);
-    	glTranslatef(14,14,0);
-    	gluSphere(qsphere, 10, 20, 20);
-    	glTranslatef(-28,0,0);
-    	gluSphere(qsphere, 10, 20, 20);
-    	glEndList();
-      gluDeleteQuadric(qsphere);
-	}
 
 void DrawGLScene(){
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glLoadIdentity(); // Reset the view
+
+    // instead of transforming the scene as follows, do the inverse to the camera
+    //root->translate(Vector3D(-width/2.0, 5.0, -50.0));
+    //root->rotate('x', 40);
+    glTranslated(-10.0, 5.0, -50.0);
+    glRotated(40.0, 1.0, 0.0, 0.0);
+
+
+    //glTranslated(0,0, -50.0);
 
     std::cout << "Drawing Scene\n";
 
@@ -108,23 +103,92 @@ void handleKey(SDL_KeyboardEvent key) {
 }
 
 void handleMouseMotion(SDL_MouseMotionEvent motion){
+    // TODO: determine this info based on the view's matrix transformation and the opengl viewport size
+    // Picking (see what the cursor is pointing at)
+    double width = 640;
+    double height = 480;
+    double fov = 40.0;
+    //glTranslated(-10.0, 5.0, -50.0);
+    Point3D eye = Point3D(10.0, -5.0, 50);
+    Vector3D up = Vector3D(0.0, -1.0, 0.0);
+    Vector3D view = Point3D(0.0, 0.0, 0.0) - eye;
 
-    xpos += (float)(motion.x-oldx)/10.0f;
-    ypos += -(float)(motion.y-oldy)/10.0f;
-    oldx = motion.x; oldy = motion.y;
+    double z = 1; // the depth of the projection plane, doesn't really matter
+    // w and h are the size of the 3d viewing plane, width and height are the 2d screen size
+    double h = z * 2 * tan((fov/2) * M_PI / 180); // assume fov is vertical fov
+    double w = h * (width / height);
+    Vector3D camX = (view.cross(up));
+    Vector3D camZ = view;
+    Vector3D camY = (camX.cross(camZ));
+    camX.normalize();
+    camY.normalize();
+    camZ.normalize();
+
+    Point3D worldPixel = eye + ((w * ((motion.x/width) - 0.5)) * camX)
+                             + ((h * (0.5 - (motion.y/height))) * camY) // invert y to not be upside down
+                             + ((z) * camZ);
+    Vector3D ray = worldPixel - eye;
+
+    RayHit* hit = NULL;
+    Object* closestObj = NULL;
+    for (std::list<Object*>::const_iterator I = objects.begin(); I != objects.end(); ++I) {
+      Object* obj = *I;
+      if (obj->dynamic) {
+        RayHit* objhit = obj->raycast(eye, ray);
+        if (objhit != NULL && (hit == NULL || hit->dist > objhit->dist)) {
+            if (hit != NULL) {
+              free(hit);
+            }
+            hit = objhit;
+            closestObj = obj;
+        }
+      }
+    }
+    if (hit != NULL) {
+      free(hit);
+    }
+    // closest obj and hvoer are both pointers to an object or NULL
+    if (closestObj != hover) {
+      if (hover != NULL) {
+        // moused off of something
+        SM.StopSound(0);
+      }
+      if (closestObj != NULL) {
+        // moused onto something
+        SM.PlaySound(0);
+      }
+      hover = closestObj;
+    }
+
+  //xpos += (float)(motion.x-oldx)/10.0f;
+  //ypos += -(float)(motion.y-oldy)/10.0f;
+  oldx = motion.x; oldy = motion.y;
 }
 
 void handleMouseButtons(SDL_MouseButtonEvent button){
 
     if(button.type == SDL_MOUSEBUTTONDOWN){
 	switch (button.button){
-	case 1/*LMB*/: SM.PlaySound(0);break;
+	case 1/*LMB*/:
+	  if (selected == NULL) {
+      selected = hover;
+      if (selected != NULL) {
+        // do something
+        SM.PlaySound(2);
+      }
+	  } else {
+      SM.StopSound(2);
+      selected = NULL;
+    }
+	  break;
 	case 2/*MMB*/:SM.PlaySound(1);break;
 	case 3/*RMB*/: SM.PlaySound(2);break;
 	}// switch
     } else { /* SDL_MOUSEBUTTONUP */
 	switch (button.button){
-	case 1: SM.StopSound(0);break;
+	case 1:
+	  //SM.StopSound(0);
+	  break;
 	case 2: SM.StopSound(1);break;
 	case 3:SM.StopSound(2);break;
 	} // switch
@@ -155,45 +219,60 @@ int main(int argc, char *argv[])
   //SDL_ShowCursor(0);
 
   // This is the main loop for the entire program and it will run until done==TRUE
-  int changeit = 1;
+  //int changeit = 1;
   int reset = 1;
+  Uint32 frametime;
 
   //objects
   double width = 20;
   double border = 1.0;
   double piece_size = 1.4;
+  double piece_depth = 0.8;
   double depth = 1.0;
-  SceneNode* root = new SceneNode("root", false);
+  //SceneNode* root = new SceneNode("root", false);
 
-  NonhierBox* prim = new NonhierBox(Point3D(0,0,0), Vector3D(width, depth, width));
-  GeometryNode* box = new GeometryNode("box", prim, false);
-  Material* mat = new PhongMaterial(Colour(1.0, 0.6, 0.2), Colour(1.0, 1.0, 1.0), 1);
-  box->set_material(mat);
-  root->add_child(box);
-  root->translate(Vector3D(-width/2.0, 5.0, -50.0));
-  root->rotate('x', 40);
+  Material* wood = new PhongMaterial(Colour(1.0, 0.6, 0.2), Colour(1.0, 1.0, 1.0), 1);
+  Material* black = new PhongMaterial(Colour(0.0, 0.0, 0.0), Colour(1.0, 1.0, 1.0), 3);
+  Material* white = new PhongMaterial(Colour(1.0, 1.0, 1.0), Colour(1.0, 1.0, 1.0), 3);
+
+  // primitives
+  NonhierBox* boardprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(width, depth, width));
+  Sphere* pieceprimitive = new Sphere();
+
+  // objects
+  objects.push_back(new Object("board", Point3D(0, 0, 0), Vector3D(1,1,1), wood, boardprimitive, false));
 
   //NonhierBox* pieceprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(piece_size, 0.4, piece_size));
-  Sphere* pieceprimitive = new Sphere();
   for (int n = 0; n < 20; n++) {
     double x = border + ((width - 2 * border - piece_size) * rand() / RAND_MAX);
     double y = border + ((width - 2 * border - piece_size) * rand() / RAND_MAX);
-    GeometryNode* piece = new GeometryNode("piece", pieceprimitive, true);
-    piece->set_material(mat);
-    box->add_child(piece);
-    piece->translate(Vector3D(x, depth, y));
-    piece->scale(Vector3D(piece_size/2.0, 0.2, piece_size/2.0));
+    //GeometryNode* piece = new GeometryNode("piece", pieceprimitive, true);
+    Material* piece_mat;
+    if (n%2 == 0)
+      piece_mat = (black);
+    else
+      piece_mat = (white);
+    objects.push_back(new Object("piece", Point3D(x, x/4 + 5 + depth + piece_depth/2, y), Vector3D(piece_size/2.0, piece_depth/2.0, piece_size/2.0), piece_mat, pieceprimitive, true));
   }
-  root->getobjectlist(objects, Matrix4x4(), Matrix4x4(), Matrix4x4());
+  //root->getobjectlist(objects, Matrix4x4(), Matrix4x4(), Matrix4x4());
 
   while(!done){
+    frametime = SDL_GetTicks();
+
+    // fixed update
+    double dt = frameDuration/1000.0;
+    for (std::list<Object*>::const_iterator I = objects.begin(); I != objects.end(); ++I) {
+      Object* obj = *I;
+      obj->move(dt, objects);
+      //std::cout << "Object " << obj->m_name << " has transform:\n" << obj->transform << "\n";
+    }
 
     // Draw the scene
-    if (changeit == 1)
-       {
-       DrawGLScene();
-       changeit = 0;
-       }
+    //if (changeit == 1)
+    //   {
+    DrawGLScene();
+    //   changeit = 0;
+    //   }
 
     // And poll for events
     SDL_Event event;
@@ -205,16 +284,15 @@ int main(int argc, char *argv[])
 	  break;
 
       case SDL_MOUSEMOTION:
-	  SDL_PeepEvents (&event,9,SDL_GETEVENT,SDL_MOUSEMOTION);
-	  handleMouseMotion(event.motion);
-          if (reset == 1)
-             {
-             xpos = 0;
-             ypos = 0;
-             reset = 0;
-             }
-          //this affects the screen.
-          changeit = 1;
+      SDL_PeepEvents (&event,9,SDL_GETEVENT,SDL_MOUSEMOTION);
+      handleMouseMotion(event.motion);
+      if (reset == 1)
+      {
+        xpos = 0;
+        ypos = 0;
+        reset = 0;
+      }
+      //changeit = 1;
 	  break;
       case SDL_MOUSEBUTTONDOWN:
       case SDL_MOUSEBUTTONUP:
@@ -234,7 +312,10 @@ int main(int argc, char *argv[])
     keys = SDL_GetKeyState(NULL);
 
     // and check if ESCAPE has been pressed. If so then quit
-    if(keys[SDLK_ESCAPE]) done=1;
+    if (keys[SDLK_ESCAPE])
+        done = 1;
+    else if (SDL_GetTicks() - frametime < frameDuration)
+      SDL_Delay (frameDuration - (SDL_GetTicks () - frametime));
   }// while done
 
   // Kill the GL & SDL screens

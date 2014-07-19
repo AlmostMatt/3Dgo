@@ -4,7 +4,7 @@
 //
 // algebra.hpp/algebra.cpp
 //
-// Classes and functions for manipulating points, vectors, matrices, 
+// Classes and functions for manipulating points, vectors, matrices,
 // and colours.  You probably won't need to modify anything in these
 // two files.
 //
@@ -35,7 +35,7 @@ double Vector3D::normalize()
         // z = z / x;
         // denom = 1.0 / (x * sqrt(1.0 + y*y + z*z));
       // }
-    // } else { /* z > x > y */ 
+    // } else { /* z > x > y */
       // if(1.0 + z > 1.0) {
         // y = y / z;
         // x = x / z;
@@ -58,7 +58,7 @@ double Vector3D::normalize()
     // }
   // }
 
-  
+
   // if(1.0 + x + y + z > 1.0) {
     v_[0] *= denom;
     v_[1] *= denom;
@@ -122,17 +122,17 @@ static void submultrow(Matrix4x4& a, size_t dest, size_t src, double fac)
  */
 Matrix4x4 Matrix4x4::invert() const
 {
-  /* The algorithm is plain old Gauss-Jordan elimination 
+  /* The algorithm is plain old Gauss-Jordan elimination
      with partial pivoting. */
 
   Matrix4x4 a(*this);
   Matrix4x4 ret;
 
-  /* Loop over cols of a from left to right, 
+  /* Loop over cols of a from left to right,
      eliminating above and below diag */
 
   /* Find largest pivot in column j among rows j..3 */
-  for(size_t j = 0; j < 4; ++j) { 
+  for(size_t j = 0; j < 4; ++j) {
     size_t i1 = j; /* Row with largest pivot candidate */
     for(size_t i = j + 1; i < 4; ++i) {
       if(fabs(a[i][j]) > fabs(a[i1][j])) {
@@ -153,7 +153,7 @@ Matrix4x4 Matrix4x4::invert() const
     dividerow(ret, j, a[j][j]);
     dividerow(a, j, a[j][j]);
 
-    /* Eliminate off-diagonal elems in col j of a, doing identical 
+    /* Eliminate off-diagonal elems in col j of a, doing identical
        ops to b */
     for(size_t i = 0; i < 4; ++i) {
       if(i != j) {
@@ -165,3 +165,67 @@ Matrix4x4 Matrix4x4::invert() const
 
   return ret;
 }
+
+
+Matrix4x4 rotation(char axis, double angle)
+{
+  if (axis == 'y')
+  {
+    angle = -angle;
+  }
+  double cosa = cos(angle * M_PI / 180);
+  double sina = sin(angle * M_PI / 180);
+  Matrix4x4 r; // the identity matrix
+  if (axis == 'x') {
+    r = Matrix4x4(Vector4D(1, 0, 0, 0),
+                  Vector4D(0, cosa, -sina, 0),
+                  Vector4D(0, sina, cosa, 0),
+                  Vector4D(0, 0, 0, 1));
+  } else if (axis == 'y') {
+    r = Matrix4x4(Vector4D(cosa, 0, -sina, 0),
+                  Vector4D(0, 1, 0, 0),
+                  Vector4D(sina, 0, cosa, 0),
+                  Vector4D(0, 0, 0, 1));
+  } else if (axis == 'z') {
+    r = Matrix4x4(Vector4D(cosa, -sina, 0, 0),
+                  Vector4D(sina, cosa, 0, 0),
+                  Vector4D(0, 0, 1, 0),
+                  Vector4D(0, 0, 0, 1));
+  }
+  return r;
+}
+
+Matrix4x4 scaling(const Vector3D& amount)
+{
+  Matrix4x4 s = Matrix4x4(Vector4D(amount[0], 0, 0, 0),
+                          Vector4D(0, amount[1], 0, 0),
+                          Vector4D(0, 0, amount[2], 0),
+                          Vector4D(0, 0, 0, 1));
+  return s;
+}
+
+Matrix4x4 translation(const Point3D& amount)
+{
+  Matrix4x4 t = Matrix4x4(Vector4D(1, 0, 0, amount[0]),
+                          Vector4D(0, 1, 0, amount[1]),
+                          Vector4D(0, 0, 1, amount[2]),
+                          Vector4D(0, 0, 0, 1));
+  return t;
+}
+
+// the plane is a 2d parallelogram defined by a point and 2 vectors
+// the sphere is an ellipsoid
+// the norm is towards the sphere and away from the plane
+Intersection spherePlane(Point3D spherepos, Vector3D spherescale, Point3D pt1, Vector3D v1, Vector3D v2) {
+  Vector3D norm = v1.cross(v2);
+  Point3D onPlane = spherepos - ((spherepos - pt1).proj(norm));
+  //
+  double dist = ((spherepos - onPlane) / spherescale).length2();
+  if (dist < 1) { // unti radius
+    return Intersection(onPlane, spherepos - onPlane, 1 - sqrt(dist));
+  }
+  // find the distance to the plane
+  // or to the nearest edge/corner
+  return Intersection();
+}
+
