@@ -21,6 +21,14 @@ Object::Object(std::string name, Point3D pos, Vector3D scale, Material* m, Primi
   inversetransform = transform.invert();
 }
 
+// accelerate to reach and stop at a point
+void Object::seek(Point3D point, double accel) {
+  Vector3D posdiff = point - m_pos;
+  double speed = std::min(60.0, 5 * posdiff.length()); // tweak this.
+  Vector3D vel_diff = posdiff.scaleTo(speed) - m_vel;
+  m_vel = m_vel + vel_diff;//.scaleTo(accel);
+}
+
 void Object::move(double dt, std::list<Object*>& objects) {
   if (dynamic) {
     //collision check
@@ -122,8 +130,10 @@ Sphere::Sphere()
 }
 
 void Sphere::render() {
+  glDisable(GL_TEXTURE_2D);
   gluQuadricNormals(quadric, GLU_SMOOTH);
   gluSphere(quadric, 1.0, 32, 32);
+  //glEnable(GL_TEXTURE_2D);
 }
 
 Sphere::~Sphere()
@@ -355,49 +365,126 @@ void NonhierBox::render() {
   double sizex = m_size[0];
   double sizey = m_size[1];
   double sizez = m_size[2];
-  std::cout << "Object is at " << m_pos << "and size: " << m_size << "\n";
 
-  glBegin(GL_QUADS);
-  // x and y
-  glNormal3f(0.0f,0.0f,-1.0f);
-  glVertex3d(x, y + sizey, z);
-  glVertex3d(x + sizex, y + sizey, z);
-  glVertex3d(x + sizex, y, z);
-  glVertex3d(x, y, z);
+  if (hasTexture) {
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glBegin(GL_QUADS);
+    // aplit the texture into a plus shape with corners unused and bottom the same as top
+    float x1 = 0.0;
+    float x2 = m_size[1]/(m_size[0] + 2 * m_size[1]);
+    float x3 = 1.0 - x2;
+    float x4 = 1.0;
+    float z1 = 0.0;
+    float z2 = m_size[1]/(m_size[2] + 2 * m_size[1]);
+    float z3 = 1.0 - z2;
+    float z4 = 1.0;
+    // x and y
+    glNormal3f(0.0f,0.0f,-1.0f);
+    glTexCoord2f(x2, z2);
+    glVertex3d(x, y + sizey, z);
+    glTexCoord2f(x3, z2);
+    glVertex3d(x + sizex, y + sizey, z);
+    glTexCoord2f(x3, z1);
+    glVertex3d(x + sizex, y, z);
+    glTexCoord2f(x2, z1);
+    glVertex3d(x, y, z);
 
-  glNormal3f(0.0f,0.0f,1.0f);
-  glVertex3d(x, y, z + sizez);
-  glVertex3d(x + sizex, y, z + sizez);
-  glVertex3d(x + sizex, y + sizey, z + sizez);
-  glVertex3d(x, y + sizey, z + sizez);
+    glNormal3f(0.0f,0.0f,1.0f);
+    glTexCoord2f(x2, z4);
+    glVertex3d(x, y, z + sizez);
+    glTexCoord2f(x3, z4);
+    glVertex3d(x + sizex, y, z + sizez);
+    glTexCoord2f(x3, z3);
+    glVertex3d(x + sizex, y + sizey, z + sizez);
+    glTexCoord2f(x2, z3);
+    glVertex3d(x, y + sizey, z + sizez);
 
-  // y and z
-  glNormal3f(-1.0f,0.0f,0.0f);
-  glVertex3d(x, y, z + sizez);
-  glVertex3d(x, y + sizey, z + sizez);
-  glVertex3d(x, y + sizey, z);
-  glVertex3d(x, y, z);
+    // y and z
+    glNormal3f(-1.0f,0.0f,0.0f);
+    glTexCoord2f(x1, z3);
+    glVertex3d(x, y, z + sizez);
+    glTexCoord2f(x2, z3);
+    glVertex3d(x, y + sizey, z + sizez);
+    glTexCoord2f(x2, z2);
+    glVertex3d(x, y + sizey, z);
+    glTexCoord2f(x1, z2);
+    glVertex3d(x, y, z);
 
-  glNormal3f(1.0f,0.0f,0.0f);
-  glVertex3d(x + sizex, y, z);
-  glVertex3d(x + sizex, y + sizey, z);
-  glVertex3d(x + sizex, y + sizey, z + sizez);
-  glVertex3d(x + sizex, y, z + sizez);
+    glNormal3f(1.0f,0.0f,0.0f);
+    glTexCoord2f(x4, z2);
+    glVertex3d(x + sizex, y, z);
+    glTexCoord2f(x3, z2);
+    glVertex3d(x + sizex, y + sizey, z);
+    glTexCoord2f(x3, z3);
+    glVertex3d(x + sizex, y + sizey, z + sizez);
+    glTexCoord2f(x4, z3);
+    glVertex3d(x + sizex, y, z + sizez);
 
-  // x and z
-  glNormal3f(0.0f,-1.0f,0.0f);
-  glVertex3d(x, y, z);
-  glVertex3d(x + sizex, y, z);
-  glVertex3d(x + sizex, y, z + sizez);
-  glVertex3d(x, y, z + sizez);
+    // x and z
+    glNormal3f(0.0f,-1.0f,0.0f);
+    glTexCoord2f(x2, z3);
+    glVertex3d(x, y, z);
+    glTexCoord2f(x3, z3);
+    glVertex3d(x + sizex, y, z);
+    glTexCoord2f(x3, z2);
+    glVertex3d(x + sizex, y, z + sizez);
+    glTexCoord2f(x2, z2);
+    glVertex3d(x, y, z + sizez);
 
-  glNormal3f(0.0f,1.0f,0.0f);
-  glVertex3d(x, y + sizey, z + sizez);
-  glVertex3d(x + sizex, y + sizey, z + sizez);
-  glVertex3d(x + sizex, y + sizey, z);
-  glVertex3d(x, y + sizey, z);
+    glNormal3f(0.0f,1.0f,0.0f);
+    glTexCoord2f(x2, z2);
+    glVertex3d(x, y + sizey, z + sizez);
+    glTexCoord2f(x3, z2);
+    glVertex3d(x + sizex, y + sizey, z + sizez);
+    glTexCoord2f(x3, z3);
+    glVertex3d(x + sizex, y + sizey, z);
+    glTexCoord2f(x2, z3);
+    glVertex3d(x, y + sizey, z);
+  } else {
+    glBegin(GL_QUADS);
+    // x and y
+    glDisable(GL_TEXTURE_2D);
+    glNormal3f(0.0f,0.0f,-1.0f);
+    glVertex3d(x, y + sizey, z);
+    glVertex3d(x + sizex, y + sizey, z);
+    glVertex3d(x + sizex, y, z);
+    glVertex3d(x, y, z);
 
+    glNormal3f(0.0f,0.0f,1.0f);
+    glVertex3d(x, y, z + sizez);
+    glVertex3d(x + sizex, y, z + sizez);
+    glVertex3d(x + sizex, y + sizey, z + sizez);
+    glVertex3d(x, y + sizey, z + sizez);
+
+    // y and z
+    glNormal3f(-1.0f,0.0f,0.0f);
+    glVertex3d(x, y, z + sizez);
+    glVertex3d(x, y + sizey, z + sizez);
+    glVertex3d(x, y + sizey, z);
+    glVertex3d(x, y, z);
+
+    glNormal3f(1.0f,0.0f,0.0f);
+    glVertex3d(x + sizex, y, z);
+    glVertex3d(x + sizex, y + sizey, z);
+    glVertex3d(x + sizex, y + sizey, z + sizez);
+    glVertex3d(x + sizex, y, z + sizez);
+
+    // x and z
+    glNormal3f(0.0f,-1.0f,0.0f);
+    glVertex3d(x, y, z);
+    glVertex3d(x + sizex, y, z);
+    glVertex3d(x + sizex, y, z + sizez);
+    glVertex3d(x, y, z + sizez);
+
+    glNormal3f(0.0f,1.0f,0.0f);
+    glVertex3d(x, y + sizey, z + sizez);
+    glVertex3d(x + sizex, y + sizey, z + sizez);
+    glVertex3d(x + sizex, y + sizey, z);
+    glVertex3d(x, y + sizey, z);
+  }
   glEnd();
+  glDisable(GL_TEXTURE_2D);
 }
 
 RayHit* NonhierBox::raycast(Point3D from, Vector3D ray, Material* m_material, bool backfaces)
@@ -455,3 +542,4 @@ RayHit* NonhierBox::raycast(Point3D from, Vector3D ray, Material* m_material, bo
 NonhierBox::~NonhierBox()
 {
 }
+

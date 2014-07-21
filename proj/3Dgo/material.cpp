@@ -14,10 +14,10 @@ PhongMaterial::~PhongMaterial()
 {
 }
 
-void PhongMaterial::apply_gl(bool selected) const
+void PhongMaterial::apply_gl(bool selected, double alpha) const
 {
-  GLfloat mat_diff[] = {m_kd.R(),m_kd.G(),m_kd.B(),1.0};
-  GLfloat mat_spec[] = {m_ks.R(),m_ks.G(),m_ks.B(),1.0};
+  GLfloat mat_diff[] = {m_kd.R(),m_kd.G(),m_kd.B(),alpha};
+  GLfloat mat_spec[] = {m_ks.R(),m_ks.G(),m_ks.B(),alpha};
   GLfloat mat_shiny[] = {m_shininess};
 
   //glEnable(GL_COLOR_MATERIAL);

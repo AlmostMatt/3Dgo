@@ -7,6 +7,7 @@
 #include <list>
 
 #define GRAVITY -20.0
+#define BOARD 13
 
 class RayHit {
 public:
@@ -29,6 +30,7 @@ public:
   Object(std::string name, Point3D pos, Vector3D scale, Material* m, Primitive* p, bool dyn);
   RayHit* raycast(Point3D from, Vector3D ray);
   void render();
+  void seek(Point3D point, double accel);
   void move(double dt, std::list<Object*>& objects);
 
   std::string m_name;
@@ -79,12 +81,17 @@ private:
 class NonhierBox : public Primitive {
 public:
   NonhierBox(const Point3D& pos, double size)
-    : m_pos(pos), m_size(size, size, size)
+    : m_pos(pos), m_size(size, size, size), hasTexture(false)
   {
   }
 
   NonhierBox(const Point3D& pos, Vector3D size)
-    : m_pos(pos), m_size(size)
+    : m_pos(pos), m_size(size), hasTexture(false)
+  {
+  }
+
+  NonhierBox(const Point3D& pos, Vector3D size, GLuint textureID)
+    : m_pos(pos), m_size(size), hasTexture(true), textureID(textureID)
   {
   }
 
@@ -95,6 +102,8 @@ public:
   Point3D m_pos;
   Vector3D m_size;
 private:
+  bool hasTexture;
+  GLuint textureID;
 };
 
 #endif

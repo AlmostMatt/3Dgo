@@ -19,6 +19,9 @@
 					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libopengl32.a" />
 					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libSDL.dll.a" />
 					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\SDL_mixer.lib" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libglaux.a" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libpng.lib" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\zlib.lib" />
 				</Linker>
 			</Target>
 			<Target title="Release">
