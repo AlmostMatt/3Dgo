@@ -101,6 +101,11 @@ public:
     return v_[ idx ];
   }
 
+  Point3D avg(const Point3D& other) const
+  {
+    return Point3D((v_[0]+other.v_[0])/2.0, (v_[1]+other.v_[1])/2.0, (v_[2]+other.v_[2])/2.0);
+  }
+
 private:
   double v_[3];
 };
@@ -527,5 +532,11 @@ Matrix4x4 scaling(const Vector3D& amount);
 Matrix4x4 translation(const Point3D& amount);
 
 Intersection spherePlane(Point3D spherepos, Vector3D spherescale, Point3D pt1, Vector3D v1, Vector3D v2);
+
+// assumes that the box is axis aligned
+Intersection sphereBox(Point3D spherepos, Vector3D spherescale, Point3D boxpos, Vector3D boxsize);
+
+// assumes equally scaled spheres
+Intersection sphereSphere(Point3D pos1, Point3D pos2, Vector3D spherescale);
 
 #endif // CS488_ALGEBRA_HPP

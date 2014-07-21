@@ -4,6 +4,15 @@ http://www.peroxide.dk/download/tutorials/tut10/pxdtut10.html
 
 http://i.cs.hku.hk/~wenping/Moving_ellipsoids/TVCG-2007-12-0187.pdf
 
+
+----
+
+
+http://www.gamasutra.com/view/feature/131424/pool_hall_lessons_fast_accurate_.php?print=1
+
+
+---
+
 generate a bunch of points/normals for one ellipsoid and for each one check if it is "inside" the other
 
 collision of dynamic objects has force based on momentum (speed * mass) and kinetic energy response
@@ -57,3 +66,7 @@ and piece_colour useful (extend node to be PieceNode ?)
 IF I PREVENT ROTATION:
 collisions become a lot easier to detect and handle, axis aligned ellipses of equal scale become sphere-sphere collision
 and sphere-plane is also still easy
+
+
+
+PARTITION SPACE TO REDUCE COLLISION DETECTION FROM N^2 TO SOMETHING REASONABLE

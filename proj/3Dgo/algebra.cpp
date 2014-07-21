@@ -221,11 +221,42 @@ Intersection spherePlane(Point3D spherepos, Vector3D spherescale, Point3D pt1, V
   Point3D onPlane = spherepos - ((spherepos - pt1).proj(norm));
   //
   double dist = ((spherepos - onPlane) / spherescale).length2();
-  if (dist < 1) { // unti radius
-    return Intersection(onPlane, spherepos - onPlane, 1 - sqrt(dist));
+  if (dist < 1.0) { // unti radius
+    return Intersection(onPlane, (spherepos - onPlane)/spherescale, 1 - sqrt(dist));
   }
   // find the distance to the plane
   // or to the nearest edge/corner
   return Intersection();
 }
 
+// assumes that the box is axis aligned
+Intersection sphereBox(Point3D spherepos, Vector3D spherescale, Point3D boxpos, Vector3D boxsize)
+{
+  // find the distance along each axis to the sphere ( or 0 for any axis where the sphere is between the min and max)
+  double dd = 0.0;
+  Point3D pt = spherepos;
+  for (int axis = 0; axis < 3; axis++) {
+    if (spherepos[axis] < boxpos[axis]) {
+      pt[axis] = boxpos[axis];
+    } else if (spherepos[axis] > boxpos[axis] + boxsize[axis]) {
+      pt[axis] = boxpos[axis] + boxsize[axis];
+    }
+  }
+  double dist = ((pt - spherepos) / spherescale).length2();
+  if (dist < 1.0) {
+    return Intersection(pt, (spherepos - pt)/spherescale, 1 - sqrt(dist));
+  }
+  return Intersection();
+}
+
+// assumes that both spheres have the same scale and orientation
+// the normal will be facing towards pos1
+Intersection sphereSphere(Point3D pos1, Point3D pos2, Vector3D spherescale)
+{
+  // find the distance along each axis to the sphere ( or 0 for any axis where the sphere is between the min and max)
+  double dist = ((pos1 - pos2) / spherescale).length2();
+  if (dist < 4.0) { // two unit spheres have combined radius 2
+    return Intersection(pos1.avg(pos2), (pos1 - pos2)/spherescale, (2.0 - sqrt(dist))/2.0);
+  }
+  return Intersection();
+}

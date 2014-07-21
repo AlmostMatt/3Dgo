@@ -31,7 +31,10 @@ void Object::seek(Point3D point, double accel) {
 
 void Object::move(double dt, std::list<Object*>& objects) {
   if (dynamic) {
+    double elasticity = 1.4;
     //collision check
+    // drag/ air resist / friction approximation
+    m_vel = 0.95 * m_vel;
     //gravity // input acceleration
     m_vel = m_vel + Vector3D(0, GRAVITY * dt, 0);
     //dt
@@ -40,11 +43,20 @@ void Object::move(double dt, std::list<Object*>& objects) {
     NonhierBox * box1 = dynamic_cast<NonhierBox*> (m_primitive);
     Sphere* sphere1 = dynamic_cast<Sphere*> (m_primitive);
 
+    // collide with the y=0 plane
+    if (sphere1 != NULL) {
+      Intersection i = sphereBox(pos2, m_scale, Point3D(-100, -1, -100), Vector3D(200, 1, 200));
+      if (!i.isNull) {
+        m_vel = m_vel - elasticity * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
+        //pos2 = m_pos;
+        pos2 = pos2 + i.norm.scaleTo(i.depth);
+      }
+    }
     // only collide with dynamic objects later in the list
     bool foundThis = false;
     for (std::list<Object*>::const_iterator I = objects.begin(); I != objects.end(); ++I) {
       Object* obj2 = *I;
-      Point3D obj2pos = obj2->m_pos;
+      Point3D obj2pos = obj2->m_pos + dt * obj2->m_vel;
       Vector3D relvel = m_vel - obj2->m_vel; // how obj1 is moving relative to object 2
       if (obj2 == this) {
         foundThis = true;
@@ -54,19 +66,35 @@ void Object::move(double dt, std::list<Object*>& objects) {
           NonhierBox * box2 = dynamic_cast<NonhierBox*> (obj2->m_primitive);
           Sphere* sphere2 = dynamic_cast<Sphere*> (obj2->m_primitive);
           if (sphere1 != NULL && box2 != NULL) {
-            // consider pos of this relative to pos of sphere
-            Intersection i = spherePlane(pos2, m_scale, obj2pos + Vector3D(0.0, box2->m_size[1], 0.0), Vector3D(box2->m_size[0], 0.0, 0.0), Vector3D(0, 0, box2->m_size[2]));
+            // assume that the box is static
+            Intersection i = sphereBox(pos2, m_scale, obj2pos, box2->m_size);
             if (!i.isNull) {
-              if (i.norm.dot(relvel) < 0) { // collision normal is facing away from the relative motion
-                m_vel = m_vel - 1.2 * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
-                //m_vel = Vector3D(0,0,0);
-                pos2 = m_pos;//
-                //pos2 = pos2 + i.norm.scaleTo(i.depth);
+              if (i.norm.dot(relvel) < 0.0) { // collision normal is facing away from the relative motion
+                std::cerr << "m_vel is " << m_vel << " and the normal is " << i.norm << " The projected vel to norm is " << m_vel.proj(i.norm) << std::endl;
+                m_vel = m_vel - elasticity * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
+                pos2 = pos2 + i.norm.scaleTo(i.depth);
               }
             }
-            // find the closest intersection
-            //Vector3D diff = intersect + obj2pos;
-            //double dd = diff.length2();
+          } else if (sphere1 != NULL && sphere2 != NULL) {
+            // assume that both objects are dynamic
+            Intersection i = sphereSphere(pos2, obj2pos, m_scale);
+            if (!i.isNull) {
+              if (i.norm.dot(relvel) < 0.0) { // collision normal is facing away from the relative motion
+                std::cerr << "m_vel is " << m_vel << " and the normal is " << i.norm << " The projected vel to norm is " << m_vel.proj(i.norm) << std::endl;
+                // the collision actsi n the direction of the normal with magnitude a multiple of the normal vector.
+                double a1 = m_vel.dot(i.norm);
+                double a2 = m_vel.dot(i.norm);
+                double P = (a1 - a2); // 2 * m1 * m2 * (a1 - a2 ) / (m1 + m2)
+                m_vel = m_vel - P * i.norm;
+                obj2->m_vel = obj2->m_vel + P * i.norm;
+                //m_vel = m_vel - elasticity * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
+                pos2 = pos2 + i.norm.scaleTo(i.depth);
+                // obj2 should theoretically also be moved do this point and it's dt changed to 0?
+
+                // adjust the velocity of obj2 now (ideally a list of colliding pairs is recorded and vectors computed for each, then the sum of the vectors is the collision response as a velocity)
+                // and objects are only moved to the poitn of collision for now
+              }
+            }
           } else {
             // for now, do nothing. Add other types of collisions later.
             // dynamic collision should change the velocity of both entities

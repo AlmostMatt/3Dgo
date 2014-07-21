@@ -449,8 +449,9 @@ int main(int argc, char *argv[])
   // materials
   table = new PhongMaterial(Colour(0.8, 0.8, 0.8), Colour(1.0, 1.0, 1.0), 1);
   Material* wood = new PhongMaterial(Colour(1.0, 0.6, 0.2), Colour(1.0, 1.0, 1.0), 1);
-  Material* black = new PhongMaterial(Colour(0.0, 0.0, 0.0), Colour(1.0, 1.0, 1.0), 3);
-  Material* white = new PhongMaterial(Colour(1.0, 1.0, 1.0), Colour(1.0, 1.0, 1.0), 3);
+  Material* black = new PhongMaterial(Colour(0.0, 0.0, 0.0), Colour(1.0, 1.0, 1.0), 20);
+  Material* white = new PhongMaterial(Colour(1.0, 1.0, 1.0), Colour(1.0, 1.0, 1.0), 20);
+  Material* bowl = new PhongMaterial(Colour(0.3, 0.3, 0.3), Colour(1.0, 1.0, 1.0), 3);
 
   // primitives
   NonhierBox* boardprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(width, depth, width), boardID);
@@ -459,28 +460,50 @@ int main(int argc, char *argv[])
   // objects
   objects.push_back(new Object("board", Point3D(0, 0, 0), Vector3D(1,1,1), wood, boardprimitive, false));
 
+  double boxW = 6.0;
+  double boxH = 8.0;
+  double boxBorder = 0.4;
+  double boxDepth = 3.5;
+  NonhierBox* boxWide = new NonhierBox(Point3D(0,0,0), Vector3D(boxW, boxDepth, boxBorder));
+  NonhierBox* boxTall = new NonhierBox(Point3D(0,0,0), Vector3D(boxBorder, boxDepth, boxH - 2 * boxBorder));
+  NonhierBox* boxBottom = new NonhierBox(Point3D(0,0,0), Vector3D(boxW - 2 * boxBorder, boxBorder, boxH - 2 * boxBorder));
+  double offsetX = 1.0;
+  double offsetY = 4.0;
+  // bowl on the right
+  objects.push_back(new Object("Rbowl1", Point3D(width + offsetX, 0, offsetY), Vector3D(1,1,1), bowl, boxWide, false));
+  objects.push_back(new Object("Rbowl2", Point3D(width + offsetX, 0, offsetY + boxH - boxBorder), Vector3D(1,1,1), bowl, boxWide, false));
+  objects.push_back(new Object("Rbowl3", Point3D(width + offsetX, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
+  objects.push_back(new Object("Rbowl4", Point3D(width + offsetX + boxW - boxBorder, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
+  objects.push_back(new Object("Rbowl5", Point3D(width + offsetX + boxBorder, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxBottom, false));
+  // bowl on the left
+  objects.push_back(new Object("Lbowl1", Point3D(- boxW - offsetX, 0, offsetY), Vector3D(1,1,1), bowl, boxWide, false));
+  objects.push_back(new Object("Lbowl2", Point3D(- boxW - offsetX, 0, offsetY + boxH - boxBorder), Vector3D(1,1,1), bowl, boxWide, false));
+  objects.push_back(new Object("Lbowl3", Point3D(- boxW - offsetX, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
+  objects.push_back(new Object("Lbowl4", Point3D(- boxW - offsetX + boxW - boxBorder, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
+  objects.push_back(new Object("Lbowl5", Point3D(- boxW - offsetX + boxBorder, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxBottom, false));
+
   //NonhierBox* pieceprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(piece_size, 0.4, piece_size));
-  for (int n = 0; n < 20; n++) {
+  for (int n = 0; n < 100; n++) {
     //double x = border + ((width - 2 * border - piece_size) * rand() / RAND_MAX);
     //double y = border + ((width - 2 * border - piece_size) * rand() / RAND_MAX);
     Material* piece_mat;
-    double areax = - width * 0.2;
-    double areay = width/2.0;
+    double border = boxBorder + piece_size / 2.0;
+    double areax = width + offsetX + border;
+    double areay = offsetY + border;
     if (n%2 == 0) {
       piece_mat = (black);
     } else {
       piece_mat = (white);
-      areax = width * 1.2;
+      areax = -offsetX - boxW;
     }
-    double x = areax -3 + (6 * rand() / RAND_MAX);
-    double y = areay -3 + (6 * rand() / RAND_MAX);
-    objects.push_back(new Object("piece", Point3D(x, x/4 + 5 + depth + piece_depth/2, y), Vector3D(piece_size/2.0, piece_depth/2.0, piece_size/2.0), piece_mat, pieceprimitive, true));
+    double x = areax + ((boxW - 2 * border) * rand() / RAND_MAX);
+    double y = areay + ((boxH - 2 * border) * rand() / RAND_MAX);
+    objects.push_back(new Object("piece", Point3D(x, boxBorder + (piece_depth) * (1 + n / 2), y), Vector3D(piece_size/2.0, piece_depth/2.0, piece_size/2.0), piece_mat, pieceprimitive, true));
   }
   //root->getobjectlist(objects, Matrix4x4(), Matrix4x4(), Matrix4x4());
 
-  viewTransform = translation(Point3D(-10.0, 5.0, -40.0)) * rotation('x', 40.0);
-  //glTranslated(-10.0, 5.0, -50.0);
-  //glRotated(40.0, 1.0, 0.0, 0.0);
+  viewTransform = translation(Point3D(-10.0, 9.0, -40.0)) * rotation('x', 65.0);
+  //viewTransform = translation(Point3D(-10.0, 5.0, -40.0)) * rotation('x', 40.0);
 
   while(!done){
     frametime = SDL_GetTicks();
@@ -546,95 +569,3 @@ int main(int argc, char *argv[])
   // And quit
   return 0;
 }
-/*
-#ifdef __cplusplus
-    #include <cstdlib>
-#else
-    #include <stdlib.h>
-#endif
-
-#include <SDL/SDL.h>
-
-int main ( int argc, char** argv )
-{
-    // initialize SDL video
-    if ( SDL_Init( SDL_INIT_VIDEO ) < 0 )
-    {
-        printf( "Unable to init SDL: %s\n", SDL_GetError() );
-        return 1;
-    }
-
-    // make sure SDL cleans up before exit
-    atexit(SDL_Quit);
-
-    // create a new window
-    SDL_Surface* screen = SDL_SetVideoMode(640, 480, 16,
-                                           SDL_HWSURFACE|SDL_DOUBLEBUF);
-    if ( !screen )
-    {
-        printf("Unable to set 640x480 video: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    // load an image
-    SDL_Surface* bmp = SDL_LoadBMP("cb.bmp");
-    if (!bmp)
-    {
-        printf("Unable to load bitmap: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    // centre the bitmap on screen
-    SDL_Rect dstrect;
-    dstrect.x = (screen->w - bmp->w) / 2;
-    dstrect.y = (screen->h - bmp->h) / 2;
-
-    // program main loop
-    bool done = false;
-    while (!done)
-    {
-        // message processing loop
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            // check for messages
-            switch (event.type)
-            {
-                // exit if the window is closed
-            case SDL_QUIT:
-                done = true;
-                break;
-
-                // check for keypresses
-            case SDL_KEYDOWN:
-                {
-                    // exit if ESCAPE is pressed
-                    if (event.key.keysym.sym == SDLK_ESCAPE)
-                        done = true;
-                    break;
-                }
-            } // end switch
-        } // end of message processing
-
-        // DRAWING STARTS HERE
-
-        // clear screen
-        SDL_FillRect(screen, 0, SDL_MapRGB(screen->format, 0, 0, 0));
-
-        // draw bitmap
-        SDL_BlitSurface(bmp, 0, screen, &dstrect);
-
-        // DRAWING ENDS HERE
-
-        // finally, update the screen :)
-        SDL_Flip(screen);
-    } // end main loop
-
-    // free loaded bitmap
-    SDL_FreeSurface(bmp);
-
-    // all is well ;)
-    printf("Exited cleanly\n");
-    return 0;
-}
-*/
