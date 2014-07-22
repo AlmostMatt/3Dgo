@@ -160,7 +160,7 @@ Sphere::Sphere()
 void Sphere::render() {
   glDisable(GL_TEXTURE_2D);
   gluQuadricNormals(quadric, GLU_SMOOTH);
-  gluSphere(quadric, 1.0, 32, 32);
+  gluSphere(quadric, 1.0, 16, 16);
   //glEnable(GL_TEXTURE_2D);
 }
 

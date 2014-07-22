@@ -70,3 +70,9 @@ and sphere-plane is also still easy
 
 
 PARTITION SPACE TO REDUCE COLLISION DETECTION FROM N^2 TO SOMETHING REASONABLE
+
+
+
+for each object, keep a list of static objects it is currently touching and the corresponding normals. apply friction if in contact and prevent acceleration towards a static normal.
+
+for each dynamic collision, compute the sum of the forces away from the normals?

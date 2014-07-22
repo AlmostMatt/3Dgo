@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
 
   double boxW = 6.0;
   double boxH = 8.0;
-  double boxBorder = 0.4;
+  double boxBorder = 0.3;
   double boxDepth = 3.5;
   NonhierBox* boxWide = new NonhierBox(Point3D(0,0,0), Vector3D(boxW, boxDepth, boxBorder));
   NonhierBox* boxTall = new NonhierBox(Point3D(0,0,0), Vector3D(boxBorder, boxDepth, boxH - 2 * boxBorder));

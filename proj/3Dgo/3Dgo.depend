@@ -1,12 +1,9 @@
 # depslib dependency file v1.0
-1405987378 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\main.cpp
+1405990167 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\main.cpp
 	"SDL_OGL.h"
 	"SoundManager.h"
 	"scene.hpp"
 	<string>
-	<cstdlib>
-	<stdlib.h>
-	<SDL/SDL.h>
 
 1405919499 c:\users\matthew\documents\github\3dgo\proj\3dgo\sdl_ogl.h
 	<GL/gl.h>
@@ -322,7 +319,7 @@
 	"scene.hpp"
 	<iostream>
 
-1405987468 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\primitive.cpp
+1405988530 source:c:\users\matthew\documents\github\3dgo\proj\3dgo\primitive.cpp
 	"primitive.hpp"
 
 1405919357 c:\program files (x86)\codeblocks\mingw\include\png.h

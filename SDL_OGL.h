@@ -18,13 +18,15 @@
 
 #include <GL/gl.h>
 #include <GL/glu.h>
+//#include <SDL/SDL_image.h>
+#include <png.h>
 #include <SDL/SDL.h>
 
 
 int CreateGLWindow(char* title, int width, int height, int bits, int fullscreenflag);
 GLvoid KillGLWindow();
 int InitGL();
-void ReSizeGLScene(GLsizei width, GLsizei height);  
+void ReSizeGLScene(GLsizei width, GLsizei height);
 
 
 #endif // _SDL_OGL__H

@@ -16,8 +16,10 @@
 #pragma interface
 
 // include SDL header files
-#include "SDL.h"
-#include "SDL_mixer.h"
+#include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
+//#include "SDL.h"
+//#include "SDL_mixer.h"
 
 // if you want more than 100 sounds, change the MAX_SOUND
 #define MAX_SOUNDS 100
@@ -41,7 +43,7 @@ class SoundManager {
 
     // manipulating music clips
     // should have only one music clip
-    
+
     int LoadMusic(char* file);
 
     int PlayMusic(int);
@@ -63,7 +65,7 @@ class SoundManager {
     // number of sound clips loaded
     int nSounds;
     int nMusics;
-    
+
     int ResetSound(int snd);
     int ResetMusic(int snd);
 };
