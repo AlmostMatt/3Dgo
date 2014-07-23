@@ -34,6 +34,13 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libglu32.a" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libopengl32.a" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libSDL.dll.a" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\SDL_mixer.lib" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libglaux.a" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\libpng.lib" />
+					<Add library="C:\Program Files (x86)\CodeBlocks\MinGW\lib\zlib.lib" />
 				</Linker>
 			</Target>
 		</Build>
@@ -62,6 +69,9 @@
 		<Unit filename="card.wav" />
 		<Unit filename="cb.bmp" />
 		<Unit filename="ghost.wav" />
+		<Unit filename="glew.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="main.cpp" />
 		<Unit filename="material.cpp" />
 		<Unit filename="material.hpp" />
@@ -73,6 +83,8 @@
 		<Unit filename="primitive.hpp" />
 		<Unit filename="scene.cpp" />
 		<Unit filename="scene.hpp" />
+		<Unit filename="shader.frag" />
+		<Unit filename="shader.vert" />
 		<Unit filename="tm.wav" />
 		<Extensions>
 			<code_completion />

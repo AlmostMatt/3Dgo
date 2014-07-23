@@ -40,9 +40,9 @@ public:
   Vector3D m_vel;
   Vector3D m_scale;
   Primitive* m_primitive;
+  Material* m_material;
 private:
   Matrix4x4 inversetransform;
-  Material* m_material;
 };
 
 class Sphere : public Primitive {
@@ -90,8 +90,8 @@ public:
   {
   }
 
-  NonhierBox(const Point3D& pos, Vector3D size, GLuint textureID)
-    : m_pos(pos), m_size(size), hasTexture(true), textureID(textureID)
+  NonhierBox(const Point3D& pos, Vector3D size, GLuint textureID, GLuint bumpProgram, GLuint bumpMap)
+    : m_pos(pos), m_size(size), hasTexture(true), textureID(textureID),bumpProgram(bumpProgram, bumpMap(bumpMap))
   {
   }
 
@@ -104,6 +104,8 @@ public:
 private:
   bool hasTexture;
   GLuint textureID;
+  GLuint bumpProgram;
+  GLuint bumpMap;
 };
 
 #endif

@@ -12,6 +12,7 @@ struct Particle
     , vel(0,0,0)
     , scale(1)
     , life(0)
+    , col(0,0,0)
   {
   }
 
@@ -20,6 +21,7 @@ struct Particle
     Vector3D vel;
     double scale;
     double life;
+    Colour col;
 };
 
 class emitter
@@ -28,7 +30,7 @@ class emitter
     emitter(GLuint texID);
     virtual ~emitter();
 
-    void emit(Point3D p, Vector3D v, double s, double time);
+    void emit(Point3D p, Vector3D v, double s, double time, Colour col);
     void update(double dt);
     void render();
   protected:

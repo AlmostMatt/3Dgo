@@ -35,9 +35,11 @@ void ReSizeGLScene(GLsizei width, GLsizei height){
 
 
 int InitGLLights(){
+
     GLfloat light_position1[] = {10, 30, 20, 1};
-    GLfloat light1[] = {0.8, 0.8, 0.8, 1.0};
-    GLfloat light2[] = {0.5, 0.5, .5, 1.0};
+    GLfloat light1[] = {1.0, 1.0, 1.0, 1.0}; // was 1 1 1
+    GLfloat light2[] = {0, 0, 0, 1.0}; // was 0.5 .5 .5 // ambient
+    GLfloat light3[] = {1.0, 1.0, 1.0, 1.0}; // specular
     GLfloat zero[] = {0, 0, 0 , 0};
 
     // setup
@@ -45,11 +47,12 @@ int InitGLLights(){
     glEnable(GL_LIGHT0);
 
     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+    //glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR);
 
-    glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 25);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light2);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, light1);
-    glLightfv(GL_LIGHT0, GL_AMBIENT, light2);
+    //glLightf(GL_LIGHT0, GL_SPOT_EXPONENT, 25);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light3); // was light2
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light1); // was 1
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light2); // was 2
     glLightfv(GL_LIGHT0, GL_POSITION, light_position1);
 
 }
@@ -59,12 +62,16 @@ int InitGL(){
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_NORMALIZE);
 	glShadeModel(GL_SMOOTH);
+
 	//glEnable(GL_COLOR_MATERIAL);
 
 	// Black Background
 	glClearColor(0.00f, 0.80f, 0.80f, 0.0f);
 
 	glEnable(GL_DEPTH_TEST);
+
+  glCullFace(GL_BACK);
+  glEnable(GL_CULL_FACE);
 
 	//glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 

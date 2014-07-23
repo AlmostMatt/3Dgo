@@ -395,8 +395,20 @@ void NonhierBox::render() {
   double sizez = m_size[2];
 
   if (hasTexture) {
+    glUseProgram(bumpProgram);
+    // colour texture
+    glActiveTexture(GL_TEXTURE0);
     glEnable(GL_TEXTURE_2D);
+    int texture_location = glGetUniformLocation(bumpProgram, "color_texture");
+    glUniform1i(texture_location, 0);
     glBindTexture(GL_TEXTURE_2D, textureID);
+    // normal map texture
+    glActiveTexture(GL_TEXTURE1);
+    glEnable(GL_TEXTURE_2D);
+    int normal_location = glGetUniformLocation(bumpProgram, "normal_texture");
+    glUniform1i(normal_location, 1);
+    glBindTexture(GL_TEXTURE_2D, bumpMap);
+
     glBegin(GL_QUADS);
     // aplit the texture into a plus shape with corners unused and bottom the same as top
     float x1 = 0.0;
@@ -470,9 +482,9 @@ void NonhierBox::render() {
     glTexCoord2f(x2, z3);
     glVertex3d(x, y + sizey, z);
   } else {
+    glDisable(GL_TEXTURE_2D);
     glBegin(GL_QUADS);
     // x and y
-    glDisable(GL_TEXTURE_2D);
     glNormal3f(0.0f,0.0f,-1.0f);
     glVertex3d(x, y + sizey, z);
     glVertex3d(x + sizex, y + sizey, z);
@@ -512,6 +524,11 @@ void NonhierBox::render() {
     glVertex3d(x, y + sizey, z);
   }
   glEnd();
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glDisable(GL_TEXTURE_2D);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, 0);
   glDisable(GL_TEXTURE_2D);
 }
 

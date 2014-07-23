@@ -13,7 +13,8 @@
  * Notes: Based on an SDL tutorial from SDL's web site
  *
  * ****************************************************************/
-
+#define GLEW_STATIC
+#include <GL/glew.h>
 #include "SDL_OGL.h"
 #include "SoundManager.h"
 #include "scene.hpp"
@@ -37,10 +38,57 @@ Object* hover;
 Matrix4x4 viewTransform;
 Material* table;
 
-int windowWidth = 800;
-int windowHeight = 600;
+int windowWidth = 1200;
+int windowHeight = 900;
 
 emitter* particles;
+
+// shader texture / framebuffer related variables
+// that need to be accessible during initialization and render
+GLuint fbo, fbo_texture, rbo_depth;
+GLuint program, attribute_v_coord, uniform_fbo_texture;
+GLuint vbo_fbo_vertices;
+// bump mapping shader info
+GLuint bumpProgram;
+
+// taken from A5 starter sample code, reads a text file to a string
+char* readShaderToString(char *fileName)
+{
+  FILE *fp;
+  long len;
+  char *buf;
+
+  fp = fopen(fileName,"rb");
+  if ( fp == NULL )
+  {
+    printf("Cannot read the file %s\n", fileName);
+    return NULL;
+  }
+
+  fseek(fp, 0, SEEK_END); //go to end of file
+
+  len = ftell(fp); //get position at end (length)
+
+  if ( len == -1 )
+  {
+      printf("Cannot determine size of the shader %s\n", fileName);
+      return NULL;
+  }
+
+  fseek(fp, 0, SEEK_SET); //go to beginning
+
+  buf = new char[len+1];
+
+  fread(buf, len, 1, fp);
+
+  buf[len] = '\0';
+  fclose(fp);
+
+  for(unsigned i=0; i<len; i++) printf("%c",buf[i]);
+  printf("\n");
+
+  return buf;
+}
 
 void update(double dt) {
   particles->update(dt);
@@ -51,7 +99,10 @@ void update(double dt) {
   double ox = (area * rand() / RAND_MAX) - area/2.0;
   double oz = (area * rand() / RAND_MAX) - area/2.0;
   std::cerr<< "rx is " << rx << std::endl;
-  particles->emit(Point3D(xpos + ox, ypos, zpos + oz), 5 * Vector3D(sin(rx) * cos(rz), cos(rx) * cos(rz), cos(rx) * sin(rz)), 1.0, 1.0);
+  if (selected == NULL && hover != NULL) {
+    Colour col = hover->m_material->get_colour();
+    particles->emit(Point3D(xpos + ox, ypos, zpos + oz), 5 * Vector3D(sin(rx) * cos(rz), cos(rx) * cos(rz), cos(rx) * sin(rz)), 1.0, 1.0, col);
+  }
   if (selected != NULL) {
     //Point3D hoverpos = selected->m_pos;
     //hoverpos[1] = 3;
@@ -67,15 +118,146 @@ void update(double dt) {
   }
 }
 
+int prepareShaders() {
+  // texture for render to texture
+  // Reference: http://en.wikibooks.org/wiki/OpenGL_Programming/Post-Processing
+  glActiveTexture(GL_TEXTURE0);
+  glGenTextures(1, &fbo_texture);
+  glBindTexture(GL_TEXTURE_2D, fbo_texture);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, windowWidth, windowHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  // depth buffer
+  glGenRenderbuffers(1, &rbo_depth);
+  glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, windowWidth, windowHeight);
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
+  /* Framebuffer to link everything together */
+  glGenFramebuffers(1, &fbo);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbo_texture, 0);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_depth);
+  GLenum status;
+  if ((status = glCheckFramebufferStatus(GL_FRAMEBUFFER)) != GL_FRAMEBUFFER_COMPLETE) {
+    fprintf(stderr, "glCheckFramebufferStatus: error %p", status);
+    return 0;
+  }
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+  // create shader objects (and get their ID)
+  GLuint vertShader, fragShader;
+  vertShader = glCreateShader(GL_VERTEX_SHADER);
+  fragShader = glCreateShader(GL_FRAGMENT_SHADER);
+  // load the source and pass it to the shader obj
+  const char* vertShaderSource = readShaderToString("shader.vert");
+  const char* fragShaderSource = readShaderToString("shader.frag");
+  std::cerr << "read source to string" << std::endl;
+  glShaderSource(vertShader, 1, &vertShaderSource, NULL);
+  glShaderSource(fragShader, 1, &fragShaderSource, NULL);
+  std::cerr << "Shaders loaded" << std::endl;
+  // compile the shaders
+  GLint vertCompiled, fragCompiled;
+  glCompileShader(vertShader);
+  glGetShaderiv(vertShader, GL_COMPILE_STATUS, &vertCompiled);
+  glCompileShader(fragShader);
+  glGetShaderiv(fragShader, GL_COMPILE_STATUS, &fragCompiled);
+  if (!vertCompiled || !fragCompiled)
+  {
+    std::cerr << "Failed to compile a shader." << std::endl;
+    return -1;
+  }
+  // link the shaders
+  program = glCreateProgram();
+  glAttachShader(program, vertShader);
+  glAttachShader(program, fragShader);
+  glLinkProgram(program);
+  GLint linked;
+  glGetProgramiv(program, GL_LINK_STATUS, &linked);
+  if (!linked)
+  {
+    std::cerr << "Failed to link the shader program" << std::endl;
+    return -1;
+  }
+
+  char * attribute_name = "v_coord";
+  attribute_v_coord = glGetAttribLocation(program, attribute_name);
+  if (attribute_v_coord == -1) {
+    fprintf(stderr, "Could not bind attribute %s\n", attribute_name);
+    return 0;
+  }
+  char * uniform_name = "fbo_texture";
+  uniform_fbo_texture = glGetUniformLocation(program, uniform_name);
+  if (uniform_fbo_texture == -1) {
+    fprintf(stderr, "Could not bind uniform %s\n", uniform_name);
+    return 0;
+  }
+
+  GLfloat fbo_vertices[] = {
+    -1, -1,
+     1, -1,
+    -1,  1,
+     1,  1,
+  };
+  glGenBuffers(1, &vbo_fbo_vertices);
+  glBindBuffer(GL_ARRAY_BUFFER, vbo_fbo_vertices);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(fbo_vertices), fbo_vertices, GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+  // create shader objects (and get their ID)
+  GLuint vertShader2, fragShader2;
+  vertShader2 = glCreateShader(GL_VERTEX_SHADER);
+  fragShader2 = glCreateShader(GL_FRAGMENT_SHADER);
+  // load the source and pass it to the shader obj
+  const char* vertShaderSource2 = readShaderToString("bump.vert");
+  const char* fragShaderSource2 = readShaderToString("bump.frag");
+  std::cerr << "read source to string" << std::endl;
+  glShaderSource(vertShader2, 1, &vertShaderSource2, NULL);
+  glShaderSource(fragShader2, 1, &fragShaderSource2, NULL);
+  std::cerr << "Second Shader loaded" << std::endl;
+  // compile the shaders
+  GLint vertCompiled2, fragCompiled2;
+  glCompileShader(vertShader2);
+  glGetShaderiv(vertShader2, GL_COMPILE_STATUS, &vertCompiled2);
+  glCompileShader(fragShader2);
+  glGetShaderiv(fragShader2, GL_COMPILE_STATUS, &fragCompiled2);
+  if (!vertCompiled2 || !fragCompiled2)
+  {
+    std::cerr << "Failed to compile 2nd shader." << std::endl;
+    return -1;
+  }
+  // link the shaders
+  bumpProgram = glCreateProgram();
+  glAttachShader(bumpProgram, vertShader2);
+  glAttachShader(bumpProgram, fragShader2);
+  glLinkProgram(bumpProgram);
+  GLint linked2;
+  glGetProgramiv(bumpProgram, GL_LINK_STATUS, &linked2);
+  if (!linked2)
+  {
+    std::cerr << "Failed to link the shader program" << std::endl;
+    return -1;
+  }
+  return 0;
+}
+
+
 void DrawGLScene(){
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glUseProgram(0);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glLoadIdentity(); // Reset the view
 
     glMultMatrixd(viewTransform.transpose().begin());
 
-    glPushMatrix();
     // draw floor opaque without depth info.
     glDepthMask(GL_FALSE);
+    glDisable(GL_DEPTH_TEST);
     table->apply_gl(false, 1.0);
     glBegin(GL_QUADS);
       glNormal3f(0.0f,1.0f,0.0f);
@@ -85,20 +267,29 @@ void DrawGLScene(){
       glVertex3d(-100, 0, -100);
     glEnd();
     glDepthMask(GL_TRUE);
+    glEnable(GL_DEPTH_TEST);
+
     // draw reflected scene (about y = 0)
     // should reflect lights as well?
+    glCullFace(GL_FRONT); // my reflection causes clockwise to become counterclockwise
     Matrix4x4 reflection = Matrix4x4();
-    reflection[1][1] = -1.0;
-    glMultMatrixd(reflection.transpose().begin());
+    //reflection[1][1] = -1.0;
+    //glMultMatrixd(reflection.transpose().begin());
+    glPushMatrix();
+    glScaled(1.0, -1.0, 1.0);
+    //glDisable(GL_DEPTH_TEST);
     for (std::list<Object*>::const_iterator I = objects.begin(); I != objects.end(); ++I) {
       Object* obj = *I;
       obj->render();
     }
+    //glEnable(GL_DEPTH_TEST);
+
+    glCullFace(GL_BACK); // the particles seem to always face the camera
     particles->render();
     glPopMatrix();
     // draw transparent floor with transparency on top of the reflection
     glEnable(GL_BLEND);
-    //glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     table->apply_gl(false, 0.6);
     glBegin(GL_QUADS);
@@ -108,15 +299,40 @@ void DrawGLScene(){
       glVertex3d(100, 0, -100);
       glVertex3d(-100, 0, -100);
     glEnd();
-    //glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 
     // draw normal scene
+    glCullFace(GL_BACK);
     for (std::list<Object*>::const_iterator I = objects.begin(); I != objects.end(); ++I) {
       Object* obj = *I;
       obj->render();
     }
     particles->render();
+
+    //Post Processing
+    // done drawing the scene to the buffer.
+    // draw the texture to the screen using the framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(program);
+    glBindTexture(GL_TEXTURE_2D, fbo_texture);
+    glUniform1i(uniform_fbo_texture, /*GL_TEXTURE*/0);
+    glEnableVertexAttribArray(attribute_v_coord);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo_fbo_vertices);
+    glVertexAttribPointer(
+      attribute_v_coord,  // attribute
+      2,                  // number of elements per vertex, here (x,y)
+      GL_FLOAT,           // the type of each element
+      GL_FALSE,           // take our values as-is
+      0,                  // no extra data between each position
+      0                   // offset of first element
+    );
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glDisableVertexAttribArray(attribute_v_coord);
 
     SDL_GL_SwapBuffers(); // Swap the buffers
 }
@@ -377,7 +593,7 @@ GLuint loadTexture(const char* filename, bool alpha)
  else
   glTexImage2D(GL_TEXTURE_2D,0, GL_RGB, twidth, theight, 0,
      GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*) image_data);
- //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -410,13 +626,18 @@ int main(int argc, char *argv[])
       return 0;
   }
 
-
+  GLenum err = glewInit();
+  if (err != GLEW_OK) {
+    std::cerr << "Glew init failed" << std::endl;
+    exit(1); // or handle the error in a nicer way
+  } else if (!GLEW_VERSION_2_1) { // check that the machine supports the 2.1 API.
+    std::cerr << "Version 2.1 not supported" << std::endl;
+    exit(1); // or handle the error in a nicer way
+  }
   // Hide the mouse cursor
   //SDL_ShowCursor(0);
 
   // This is the main loop for the entire program and it will run until done==TRUE
-  //int changeit = 1;
-  int reset = 1;
   Uint32 frametime;
 
   //objects
@@ -425,53 +646,30 @@ int main(int argc, char *argv[])
   double piece_size = 0.9; // 1.4
   double piece_depth = 0.5; // 0.8
   double depth = 1.0;
-  //SceneNode* root = new SceneNode("root", false);
 
-  // textures
-
-  //int imgWidth = 512, imgHeight = 512;
-  //unsigned* imageData = malloc(imgWidth * imgHeight * 3);
-
-  std::cerr << "Loading texture" << std::endl;
+  std::cerr << "Loading textures" << std::endl;
   GLuint boardID = loadTexture("board.png", false);
+  GLuint bumpMap = loadTexture("bumpmap.png", false);
   GLuint particleID = loadTexture("circle_soft.png", true);
+  std::cerr << "Textures loaded" << std::endl;
 
   particles = new emitter(particleID);
 
-  /*
-  char* filename = "board.bmp";
-  FILE* File = fopen(filename, "rb");
-  if (File) {
-    png_byte header[8];
-    fread(header, 1, 8 ,File);
-    int is_png =
-    //fclose(File);
-    //AUX_RGBImageRec* imageData = auxDIBImageLoad(filename);
-    // create texture
-    glBindTexture(GL_TEXTURE_2D, BOARD);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData->data);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imageData->sizeX, imageData->sizeY, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData->data);
-  } else {
-    std::cerr << "Failed to load image " << filename << std::endl;
-  }
-  free(imageData);
-  */
+  int error = prepareShaders();
+  if (error != 0) return error;
+
+  // initialize shaders
+  std::cerr << "Loading shaders" << std::endl;
 
   // materials
   table = new PhongMaterial(Colour(0.8, 0.8, 0.8), Colour(1.0, 1.0, 1.0), 1);
   Material* wood = new PhongMaterial(Colour(1.0, 0.6, 0.2), Colour(1.0, 1.0, 1.0), 1);
-  Material* black = new PhongMaterial(Colour(0.0, 0.0, 0.0), Colour(1.0, 1.0, 1.0), 20);
-  Material* white = new PhongMaterial(Colour(1.0, 1.0, 1.0), Colour(1.0, 1.0, 1.0), 20);
+  Material* black = new PhongMaterial(Colour(0.0, 0.0, 0.0), Colour(1.0, 1.0, 1.0), 128);
+  Material* white = new PhongMaterial(Colour(1.0, 1.0, 1.0), Colour(1.0, 1.0, 1.0), 128);
   Material* bowl = new PhongMaterial(Colour(0.3, 0.3, 0.3), Colour(1.0, 1.0, 1.0), 3);
 
   // primitives
-  NonhierBox* boardprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(width, depth, width), boardID);
+  NonhierBox* boardprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(width, depth, width), boardID, bumpProgram, bumpMap);
   Sphere* pieceprimitive = new Sphere();
 
   // objects
@@ -479,7 +677,7 @@ int main(int argc, char *argv[])
 
   double boxW = 6.0;
   double boxH = 8.0;
-  double boxBorder = 0.3;
+  double boxBorder = 0.4;
   double boxDepth = 3.5;
   NonhierBox* boxWide = new NonhierBox(Point3D(0,0,0), Vector3D(boxW, boxDepth, boxBorder));
   NonhierBox* boxTall = new NonhierBox(Point3D(0,0,0), Vector3D(boxBorder, boxDepth, boxH - 2 * boxBorder));
@@ -487,20 +685,20 @@ int main(int argc, char *argv[])
   double offsetX = 1.0;
   double offsetY = 4.0;
 
-  /*
   // bowl on the right
-  objects.push_back(new Object("Rbowl1", Point3D(width + offsetX, 0, offsetY), Vector3D(1,1,1), bowl, boxWide, false));
-  objects.push_back(new Object("Rbowl2", Point3D(width + offsetX, 0, offsetY + boxH - boxBorder), Vector3D(1,1,1), bowl, boxWide, false));
-  objects.push_back(new Object("Rbowl3", Point3D(width + offsetX, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
-  objects.push_back(new Object("Rbowl4", Point3D(width + offsetX + boxW - boxBorder, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
-  objects.push_back(new Object("Rbowl5", Point3D(width + offsetX + boxBorder, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxBottom, false));
+  double boxZ = 0.0;
+  objects.push_back(new Object("Rbowl1", Point3D(width + offsetX, boxZ, offsetY), Vector3D(1,1,1), bowl, boxWide, false));
+  objects.push_back(new Object("Rbowl2", Point3D(width + offsetX, boxZ, offsetY + boxH - boxBorder), Vector3D(1,1,1), bowl, boxWide, false));
+  objects.push_back(new Object("Rbowl3", Point3D(width + offsetX, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
+  objects.push_back(new Object("Rbowl4", Point3D(width + offsetX + boxW - boxBorder, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
+  objects.push_back(new Object("Rbowl5", Point3D(width + offsetX + boxBorder, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxBottom, false));
   // bowl on the left
-  objects.push_back(new Object("Lbowl1", Point3D(- boxW - offsetX, 0, offsetY), Vector3D(1,1,1), bowl, boxWide, false));
-  objects.push_back(new Object("Lbowl2", Point3D(- boxW - offsetX, 0, offsetY + boxH - boxBorder), Vector3D(1,1,1), bowl, boxWide, false));
-  objects.push_back(new Object("Lbowl3", Point3D(- boxW - offsetX, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
-  objects.push_back(new Object("Lbowl4", Point3D(- boxW - offsetX + boxW - boxBorder, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
-  objects.push_back(new Object("Lbowl5", Point3D(- boxW - offsetX + boxBorder, 0, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxBottom, false));
-  */
+  objects.push_back(new Object("Lbowl1", Point3D(- boxW - offsetX, boxZ, offsetY), Vector3D(1,1,1), bowl, boxWide, false));
+  objects.push_back(new Object("Lbowl2", Point3D(- boxW - offsetX, boxZ, offsetY + boxH - boxBorder), Vector3D(1,1,1), bowl, boxWide, false));
+  objects.push_back(new Object("Lbowl3", Point3D(- boxW - offsetX, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
+  objects.push_back(new Object("Lbowl4", Point3D(- boxW - offsetX + boxW - boxBorder, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
+  objects.push_back(new Object("Lbowl5", Point3D(- boxW - offsetX + boxBorder, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxBottom, false));
+
 
   //NonhierBox* pieceprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(piece_size, 0.4, piece_size));
   for (int n = 0; n < 100; n++) {
@@ -520,7 +718,6 @@ int main(int argc, char *argv[])
     double y = areay + ((boxH - 2 * border) * rand() / RAND_MAX);
     objects.push_back(new Object("piece", Point3D(x, boxBorder + (piece_depth) * (1 + n / 2), y), Vector3D(piece_size/2.0, piece_depth/2.0, piece_size/2.0), piece_mat, pieceprimitive, true));
   }
-  //root->getobjectlist(objects, Matrix4x4(), Matrix4x4(), Matrix4x4());
 
   viewTransform = translation(Point3D(-10.0, 9.0, -40.0)) * rotation('x', 65.0);
   //viewTransform = translation(Point3D(-10.0, 5.0, -40.0)) * rotation('x', 40.0);
@@ -533,11 +730,7 @@ int main(int argc, char *argv[])
     update(dt);
 
     // Draw the scene
-    //if (changeit == 1)
-    //   {
     DrawGLScene();
-    //   changeit = 0;
-    //   }
 
     // And poll for events
     SDL_Event event;
@@ -551,13 +744,6 @@ int main(int argc, char *argv[])
       case SDL_MOUSEMOTION:
       SDL_PeepEvents (&event,9,SDL_GETEVENT,SDL_MOUSEMOTION);
       handleMouseMotion(event.motion);
-      if (reset == 1)
-      {
-        xpos = 0;
-        ypos = 0;
-        reset = 0;
-      }
-      //changeit = 1;
 	  break;
       case SDL_MOUSEBUTTONDOWN:
       case SDL_MOUSEBUTTONUP:
@@ -587,5 +773,6 @@ int main(int argc, char *argv[])
 
   KillGLWindow();
   // And quit
+  glDeleteProgram(program);
   return 0;
 }

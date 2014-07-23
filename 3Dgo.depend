@@ -589,7 +589,8 @@
 	<algorithm>
 	<cmath>
 
-1406011796 source:c:\users\matthew\documents\github\3dgo\main.cpp
+1406135525 source:c:\users\matthew\documents\github\3dgo\main.cpp
+	<GL/glew.h>
 	"SDL_OGL.h"
 	"SoundManager.h"
 	"scene.hpp"
@@ -612,16 +613,16 @@
 	"primitive.hpp"
 	"material.hpp"
 
-1405918775 c:\users\matthew\documents\github\3dgo\primitive.hpp
+1406084058 c:\users\matthew\documents\github\3dgo\primitive.hpp
 	"algebra.hpp"
 	"material.hpp"
 	<GL/glu.h>
 	<list>
 
-1405899892 c:\users\matthew\documents\github\3dgo\material.hpp
+1406083958 c:\users\matthew\documents\github\3dgo\material.hpp
 	"algebra.hpp"
 
-1405899953 source:c:\users\matthew\documents\github\3dgo\material.cpp
+1406083990 source:c:\users\matthew\documents\github\3dgo\material.cpp
 	"material.hpp"
 	<GL/gl.h>
 
@@ -635,14 +636,14 @@
 	"primitive.hpp"
 	"algebra.hpp"
 
-1406010533 source:c:\users\matthew\documents\github\3dgo\primitive.cpp
+1406133995 source:c:\users\matthew\documents\github\3dgo\primitive.cpp
 	"primitive.hpp"
 
 1405719754 source:c:\users\matthew\documents\github\3dgo\scene.cpp
 	"scene.hpp"
 	<iostream>
 
-1405720211 source:c:\users\matthew\documents\github\3dgo\sdl_ogl.cpp
+1406133931 source:c:\users\matthew\documents\github\3dgo\sdl_ogl.cpp
 	"SDL_OGL.h"
 	<stdio.h>
 
@@ -650,10 +651,40 @@
 	"SoundManager.h"
 	<stdlib.h>
 
-1406010723 c:\users\matthew\documents\github\3dgo\particles.h
+1406083463 c:\users\matthew\documents\github\3dgo\particles.h
 	"algebra.hpp"
 	<GL/glu.h>
 
-1406012340 source:c:\users\matthew\documents\github\3dgo\particles.cpp
+1406083618 source:c:\users\matthew\documents\github\3dgo\particles.cpp
 	"particles.h"
+
+1374502400 c:\program files (x86)\codeblocks\mingw\include\gl\glew.h
+	<stddef.h>
+	<inttypes.h>
+	<stdint.h>
+	<inttypes.h>
+	<OpenGL/glu.h>
+	<GL/glu.h>
+
+1374502282 source:c:\users\matthew\documents\github\3dgo\glew.c
+	<GL/glew.h>
+	<GL/wglew.h>
+	<GL/glxew.h>
+	<dlfcn.h>
+	<stdio.h>
+	<stdlib.h>
+	<stdlib.h>
+	<string.h>
+	<AvailabilityMacros.h>
+	<dlfcn.h>
+	<mach-o/dyld.h>
+
+1374502400 c:\program files (x86)\codeblocks\mingw\include\gl\wglew.h
+	<windows.h>
+
+1374502400 c:\program files (x86)\codeblocks\mingw\include\gl\glxew.h
+	<X11/Xlib.h>
+	<X11/Xutil.h>
+	<X11/Xmd.h>
+	<GL/glew.h>
 

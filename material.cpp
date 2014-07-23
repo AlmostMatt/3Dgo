@@ -37,3 +37,8 @@ void PhongMaterial::apply_gl(bool selected, double alpha) const
   glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_spec);
   glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, mat_shiny);
 }
+
+Colour PhongMaterial::get_colour() const
+{
+  return m_kd;
+}
