@@ -480,6 +480,8 @@ void handleMouseButtons(SDL_MouseButtonEvent button){
       selected = hover;
       if (selected != NULL) {
         // do something
+        SM.StopSound(0);
+        SM.PlaySound(0);
       }
 	  } else {
       selected = NULL;
@@ -699,8 +701,8 @@ int main(int argc, char *argv[])
   board = new Object("board", Point3D(0, 0, 0), Vector3D(1,1,1), wood, boardprimitive, false);
   objects.push_back(board);
 
-  double boxW = 8.0;
-  double boxH = 8.0;
+  double boxW = 6.0;
+  double boxH = 12.0;
   double boxBorder = 0.4;
   double boxDepth = 2.5;
   NonhierBox* boxWide = new NonhierBox(Point3D(0,0,0), Vector3D(boxW, boxDepth, boxBorder), brick, bumpProgram, brickBump);

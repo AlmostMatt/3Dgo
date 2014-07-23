@@ -13,7 +13,7 @@ const static vec2 offset[8] = {
 };
 
 void main(void) {
-    vec2 pixel = vec2(1.0/800.0, 1.0/600.0);
+    vec2 pixel = vec2(1.0/1200.0, 1.0/900.0);
     vec4 col = texture2D(fbo_texture, f_texcoord);
     
     // compare adjacent pixels

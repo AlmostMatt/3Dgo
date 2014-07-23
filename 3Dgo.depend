@@ -589,7 +589,7 @@
 	<algorithm>
 	<cmath>
 
-1406160329 source:c:\users\matthew\documents\github\3dgo\main.cpp
+1406161163 source:c:\users\matthew\documents\github\3dgo\main.cpp
 	"SoundManager.h"
 	<list>
 	"algebra.hpp"
@@ -641,7 +641,7 @@
 	"primitive.hpp"
 	"algebra.hpp"
 
-1406159379 source:c:\users\matthew\documents\github\3dgo\primitive.cpp
+1406161148 source:c:\users\matthew\documents\github\3dgo\primitive.cpp
 	"primitive.hpp"
 
 1405719754 source:c:\users\matthew\documents\github\3dgo\scene.cpp
