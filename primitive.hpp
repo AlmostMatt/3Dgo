@@ -3,6 +3,12 @@
 
 #include "algebra.hpp"
 #include "material.hpp"
+
+#define GLEW_STATIC
+#include <GL/glew.h>
+#include "SDL_OGL.h"
+
+#include <GL/gl.h>
 #include <GL/glu.h>
 #include <list>
 
@@ -91,7 +97,7 @@ public:
   }
 
   NonhierBox(const Point3D& pos, Vector3D size, GLuint textureID, GLuint bumpProgram, GLuint bumpMap)
-    : m_pos(pos), m_size(size), hasTexture(true), textureID(textureID),bumpProgram(bumpProgram, bumpMap(bumpMap))
+    : m_pos(pos), m_size(size), hasTexture(true), textureID(textureID),bumpProgram(bumpProgram), bumpMap(bumpMap)
   {
   }
 

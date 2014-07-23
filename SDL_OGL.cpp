@@ -36,7 +36,7 @@ void ReSizeGLScene(GLsizei width, GLsizei height){
 
 int InitGLLights(){
 
-    GLfloat light_position1[] = {10, 30, 20, 1};
+    GLfloat light_position1[] = {0, 30, -20, 1}; // 10 30 20 1
     GLfloat light1[] = {1.0, 1.0, 1.0, 1.0}; // was 1 1 1
     GLfloat light2[] = {0, 0, 0, 1.0}; // was 0.5 .5 .5 // ambient
     GLfloat light3[] = {1.0, 1.0, 1.0, 1.0}; // specular

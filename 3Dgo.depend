@@ -589,11 +589,12 @@
 	<algorithm>
 	<cmath>
 
-1406135525 source:c:\users\matthew\documents\github\3dgo\main.cpp
-	<GL/glew.h>
-	"SDL_OGL.h"
+1406146618 source:c:\users\matthew\documents\github\3dgo\main.cpp
 	"SoundManager.h"
-	"scene.hpp"
+	<list>
+	"algebra.hpp"
+	"primitive.hpp"
+	"material.hpp"
 	"particles.h"
 	<string>
 
@@ -613,9 +614,12 @@
 	"primitive.hpp"
 	"material.hpp"
 
-1406084058 c:\users\matthew\documents\github\3dgo\primitive.hpp
+1406139284 c:\users\matthew\documents\github\3dgo\primitive.hpp
 	"algebra.hpp"
 	"material.hpp"
+	<GL/glew.h>
+	"SDL_OGL.h"
+	<GL/gl.h>
 	<GL/glu.h>
 	<list>
 
@@ -636,14 +640,14 @@
 	"primitive.hpp"
 	"algebra.hpp"
 
-1406133995 source:c:\users\matthew\documents\github\3dgo\primitive.cpp
+1406149483 source:c:\users\matthew\documents\github\3dgo\primitive.cpp
 	"primitive.hpp"
 
 1405719754 source:c:\users\matthew\documents\github\3dgo\scene.cpp
 	"scene.hpp"
 	<iostream>
 
-1406133931 source:c:\users\matthew\documents\github\3dgo\sdl_ogl.cpp
+1406143055 source:c:\users\matthew\documents\github\3dgo\sdl_ogl.cpp
 	"SDL_OGL.h"
 	<stdio.h>
 

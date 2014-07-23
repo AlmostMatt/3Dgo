@@ -13,11 +13,11 @@
  * Notes: Based on an SDL tutorial from SDL's web site
  *
  * ****************************************************************/
-#define GLEW_STATIC
-#include <GL/glew.h>
-#include "SDL_OGL.h"
 #include "SoundManager.h"
-#include "scene.hpp"
+#include <list>
+#include "algebra.hpp"
+#include "primitive.hpp"
+#include "material.hpp"
 #include "particles.h"
 #include <string>
 
@@ -50,6 +50,8 @@ GLuint program, attribute_v_coord, uniform_fbo_texture;
 GLuint vbo_fbo_vertices;
 // bump mapping shader info
 GLuint bumpProgram;
+GLuint attribute_tangent;
+GLuint attribute_bitangent;
 
 // taken from A5 starter sample code, reads a text file to a string
 char* readShaderToString(char *fileName)
@@ -188,13 +190,13 @@ int prepareShaders() {
   attribute_v_coord = glGetAttribLocation(program, attribute_name);
   if (attribute_v_coord == -1) {
     fprintf(stderr, "Could not bind attribute %s\n", attribute_name);
-    return 0;
+    return -1;
   }
   char * uniform_name = "fbo_texture";
   uniform_fbo_texture = glGetUniformLocation(program, uniform_name);
   if (uniform_fbo_texture == -1) {
     fprintf(stderr, "Could not bind uniform %s\n", uniform_name);
-    return 0;
+    return -1;
   }
 
   GLfloat fbo_vertices[] = {
@@ -208,6 +210,7 @@ int prepareShaders() {
   glBufferData(GL_ARRAY_BUFFER, sizeof(fbo_vertices), fbo_vertices, GL_STATIC_DRAW);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+  // Bump map shader
   // create shader objects (and get their ID)
   GLuint vertShader2, fragShader2;
   vertShader2 = glCreateShader(GL_VERTEX_SHADER);
@@ -225,11 +228,25 @@ int prepareShaders() {
   glGetShaderiv(vertShader2, GL_COMPILE_STATUS, &vertCompiled2);
   glCompileShader(fragShader2);
   glGetShaderiv(fragShader2, GL_COMPILE_STATUS, &fragCompiled2);
-  if (!vertCompiled2 || !fragCompiled2)
-  {
-    std::cerr << "Failed to compile 2nd shader." << std::endl;
+  if (!vertCompiled2) {
+    std::cerr << "Failed to compile 2nd vert shader." << std::endl;
+    GLint logSize = 0;
+    glGetShaderiv(vertShader2, GL_INFO_LOG_LENGTH, &logSize);
+    char* infoLog = (char*)malloc(logSize);
+    glGetShaderInfoLog(vertShader2, logSize, &logSize, infoLog);
+    std::cerr << "Log is: " << infoLog << std::endl;
     return -1;
   }
+  if (!fragCompiled2) {
+    std::cerr << "Failed to compile 2nd frag shader." << std::endl;
+    GLint logSize = 0;
+    glGetShaderiv(fragShader2, GL_INFO_LOG_LENGTH, &logSize);
+    char* infoLog = (char*)malloc(logSize);
+    glGetShaderInfoLog(fragShader2, logSize, &logSize, infoLog);
+    std::cerr << "Log is: " << infoLog << std::endl;
+    return -1;
+  }
+
   // link the shaders
   bumpProgram = glCreateProgram();
   glAttachShader(bumpProgram, vertShader2);
@@ -240,6 +257,29 @@ int prepareShaders() {
   if (!linked2)
   {
     std::cerr << "Failed to link the shader program" << std::endl;
+    return -1;
+  }
+
+  char * attribute3_name = "bitangent";
+  attribute_bitangent = glGetAttribLocation(bumpProgram, attribute3_name);
+  if (attribute_bitangent == -1) {
+    fprintf(stderr, "Could not bind attribute %s\n", attribute3_name);
+    return -1;
+  }
+  char * attribute2_name = "tangent";
+  attribute_tangent = glGetAttribLocation(bumpProgram, attribute2_name);
+  if (attribute_tangent == -1) {
+    fprintf(stderr, "Could not bind attribute %s\n", attribute2_name);
+    return -1;
+  }
+  char * uniform2_name = "color_texture";
+  if (glGetUniformLocation(bumpProgram, uniform2_name) == -1) {
+    fprintf(stderr, "Could not bind uniform %s\n", uniform2_name);
+    return -1;
+  }
+  char * uniform3_name = "normal_texture";
+  if (glGetUniformLocation(bumpProgram, uniform3_name) == -1) {
+    fprintf(stderr, "Could not bind uniform %s\n", uniform3_name);
     return -1;
   }
   return 0;
@@ -319,7 +359,7 @@ void DrawGLScene(){
 
     glUseProgram(program);
     glBindTexture(GL_TEXTURE_2D, fbo_texture);
-    glUniform1i(uniform_fbo_texture, /*GL_TEXTURE*/0);
+    glUniform1i(uniform_fbo_texture, /*GL_TEXTURE0*/0);
     glEnableVertexAttribArray(attribute_v_coord);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo_fbo_vertices);
@@ -594,8 +634,8 @@ GLuint loadTexture(const char* filename, bool alpha)
   glTexImage2D(GL_TEXTURE_2D,0, GL_RGB, twidth, theight, 0,
      GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*) image_data);
   //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
@@ -649,7 +689,11 @@ int main(int argc, char *argv[])
 
   std::cerr << "Loading textures" << std::endl;
   GLuint boardID = loadTexture("board.png", false);
-  GLuint bumpMap = loadTexture("bumpmap.png", false);
+  GLuint bumpMap = loadTexture("board_normal.png", false);
+
+  GLuint brick = loadTexture("color_map.png", false);
+  GLuint brickBump = loadTexture("normal_map.png", false);
+
   GLuint particleID = loadTexture("circle_soft.png", true);
   std::cerr << "Textures loaded" << std::endl;
 
@@ -679,12 +723,13 @@ int main(int argc, char *argv[])
   double boxH = 8.0;
   double boxBorder = 0.4;
   double boxDepth = 3.5;
-  NonhierBox* boxWide = new NonhierBox(Point3D(0,0,0), Vector3D(boxW, boxDepth, boxBorder));
-  NonhierBox* boxTall = new NonhierBox(Point3D(0,0,0), Vector3D(boxBorder, boxDepth, boxH - 2 * boxBorder));
-  NonhierBox* boxBottom = new NonhierBox(Point3D(0,0,0), Vector3D(boxW - 2 * boxBorder, boxBorder, boxH - 2 * boxBorder));
+  NonhierBox* boxWide = new NonhierBox(Point3D(0,0,0), Vector3D(boxW, boxDepth, boxBorder), brick, bumpProgram, brickBump);
+  NonhierBox* boxTall = new NonhierBox(Point3D(0,0,0), Vector3D(boxBorder, boxDepth, boxH - 2 * boxBorder), brick, bumpProgram, brickBump);
+  NonhierBox* boxBottom = new NonhierBox(Point3D(0,0,0), Vector3D(boxW - 2 * boxBorder, boxBorder, boxH - 2 * boxBorder), brick, bumpProgram, brickBump);
   double offsetX = 1.0;
   double offsetY = 4.0;
 
+  /*
   // bowl on the right
   double boxZ = 0.0;
   objects.push_back(new Object("Rbowl1", Point3D(width + offsetX, boxZ, offsetY), Vector3D(1,1,1), bowl, boxWide, false));
@@ -698,7 +743,7 @@ int main(int argc, char *argv[])
   objects.push_back(new Object("Lbowl3", Point3D(- boxW - offsetX, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
   objects.push_back(new Object("Lbowl4", Point3D(- boxW - offsetX + boxW - boxBorder, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
   objects.push_back(new Object("Lbowl5", Point3D(- boxW - offsetX + boxBorder, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxBottom, false));
-
+*/
 
   //NonhierBox* pieceprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(piece_size, 0.4, piece_size));
   for (int n = 0; n < 100; n++) {

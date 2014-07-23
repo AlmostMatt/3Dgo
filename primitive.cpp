@@ -408,6 +408,9 @@ void NonhierBox::render() {
     int normal_location = glGetUniformLocation(bumpProgram, "normal_texture");
     glUniform1i(normal_location, 1);
     glBindTexture(GL_TEXTURE_2D, bumpMap);
+    // vertex attribute tangent
+    int tangent_location = glGetAttribLocation(bumpProgram, "tangent");
+    int bitangent_location = glGetAttribLocation(bumpProgram, "bitangent");
 
     glBegin(GL_QUADS);
     // aplit the texture into a plus shape with corners unused and bottom the same as top
@@ -420,8 +423,11 @@ void NonhierBox::render() {
     float z3 = 1.0 - z2;
     float z4 = 1.0;
     // x and y
+
+    /*
     glNormal3f(0.0f,0.0f,-1.0f);
     glTexCoord2f(x2, z2);
+    glVertexAttrib3d(tangent_location, 0.0, 1.0, 0.0); // tangent attribute
     glVertex3d(x, y + sizey, z);
     glTexCoord2f(x3, z2);
     glVertex3d(x + sizex, y + sizey, z);
@@ -429,9 +435,14 @@ void NonhierBox::render() {
     glVertex3d(x + sizex, y, z);
     glTexCoord2f(x2, z1);
     glVertex3d(x, y, z);
+    */
 
-    glNormal3f(0.0f,0.0f,1.0f);
+    //glNormal3f(0.0f,0.0f,1.0f);
+    glNormal3d(0.0, 0.0, -1.0);
     glTexCoord2f(x2, z4);
+    glVertexAttrib3d(tangent_location, 0.0, 1.0, 0.0); // tangent attribute
+    glVertexAttrib3d(bitangent_location, 1.0, 0.0, 0.0); // tangent attribute
+    //glVertexAttrib3d(tangent_location, 0.0, -1.0, 0.0); // tangent attribute
     glVertex3d(x, y, z + sizez);
     glTexCoord2f(x3, z4);
     glVertex3d(x + sizex, y, z + sizez);
@@ -443,6 +454,8 @@ void NonhierBox::render() {
     // y and z
     glNormal3f(-1.0f,0.0f,0.0f);
     glTexCoord2f(x1, z3);
+    glVertexAttrib3d(tangent_location, 0.0, 1.0, 0.0); // tangent attribute
+    glVertexAttrib3d(bitangent_location, 0.0, 0.0, 1.0); // tangent attribute
     glVertex3d(x, y, z + sizez);
     glTexCoord2f(x2, z3);
     glVertex3d(x, y + sizey, z + sizez);
@@ -453,6 +466,8 @@ void NonhierBox::render() {
 
     glNormal3f(1.0f,0.0f,0.0f);
     glTexCoord2f(x4, z2);
+    glVertexAttrib3d(tangent_location, 0.0, 1.0, 0.0); // tangent attribute
+    glVertexAttrib3d(bitangent_location, 0.0, 0.0, 1.0); // tangent attribute
     glVertex3d(x + sizex, y, z);
     glTexCoord2f(x3, z2);
     glVertex3d(x + sizex, y + sizey, z);
@@ -464,6 +479,8 @@ void NonhierBox::render() {
     // x and z
     glNormal3f(0.0f,-1.0f,0.0f);
     glTexCoord2f(x2, z3);
+    glVertexAttrib3d(tangent_location, 0.0, 0.0, -1.0); // tangent attribute
+    glVertexAttrib3d(bitangent_location, 1.0, 0.0, 0.0); // tangent attribute
     glVertex3d(x, y, z);
     glTexCoord2f(x3, z3);
     glVertex3d(x + sizex, y, z);
@@ -474,6 +491,8 @@ void NonhierBox::render() {
 
     glNormal3f(0.0f,1.0f,0.0f);
     glTexCoord2f(x2, z2);
+    glVertexAttrib3d(tangent_location, 0.0, 0.0, 1.0); // tangent attribute
+    glVertexAttrib3d(bitangent_location, 1.0, 0.0, 0.0); // tangent attribute
     glVertex3d(x, y + sizey, z + sizez);
     glTexCoord2f(x3, z2);
     glVertex3d(x + sizex, y + sizey, z + sizez);
@@ -481,6 +500,7 @@ void NonhierBox::render() {
     glVertex3d(x + sizex, y + sizey, z);
     glTexCoord2f(x2, z3);
     glVertex3d(x, y + sizey, z);
+
   } else {
     glDisable(GL_TEXTURE_2D);
     glBegin(GL_QUADS);
@@ -524,12 +544,14 @@ void NonhierBox::render() {
     glVertex3d(x, y + sizey, z);
   }
   glEnd();
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glDisable(GL_TEXTURE_2D);
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_2D, 0);
   glDisable(GL_TEXTURE_2D);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  glDisable(GL_TEXTURE_2D);
+
+  glUseProgram(0);
 }
 
 RayHit* NonhierBox::raycast(Point3D from, Vector3D ray, Material* m_material, bool backfaces)
