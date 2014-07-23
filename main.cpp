@@ -26,6 +26,7 @@
 const Uint32 fps = 60;
 const Uint32 frameDuration = 1000 / fps;
 
+Object* board;
 double xpos = 0, ypos = 0, zpos = 0;
 int oldx = 0, oldy = 0;
 
@@ -100,16 +101,19 @@ void update(double dt) {
   double area = 0.5;
   double ox = (area * rand() / RAND_MAX) - area/2.0;
   double oz = (area * rand() / RAND_MAX) - area/2.0;
-  std::cerr<< "rx is " << rx << std::endl;
-  if (selected == NULL && hover != NULL) {
+  //std::cerr<< "rx is " << rx << std::endl;
+  if (selected != NULL) {
+    Colour col = selected->m_material->get_colour();
+    particles->emit(Point3D(xpos + ox, ypos, zpos + oz), 6 * Vector3D(sin(rx) * cos(rz), cos(rx) * cos(rz), cos(rx) * sin(rz)), 0.5, 1.2, col);// size then lifetime
+  } else if (hover != NULL) {
     Colour col = hover->m_material->get_colour();
-    particles->emit(Point3D(xpos + ox, ypos, zpos + oz), 5 * Vector3D(sin(rx) * cos(rz), cos(rx) * cos(rz), cos(rx) * sin(rz)), 1.0, 1.0, col);
+    particles->emit(Point3D(xpos + ox, ypos, zpos + oz), 6 * Vector3D(sin(rx) * cos(rz), cos(rx) * cos(rz), cos(rx) * sin(rz)), 0.5, 1.2, col);// size then lifetime
   }
   if (selected != NULL) {
     //Point3D hoverpos = selected->m_pos;
     //hoverpos[1] = 3;
-    Point3D hoverpos = Point3D(xpos, ypos + 3 + 0.5, zpos);
-    selected->seek(hoverpos, 10 * dt);
+    Point3D hoverpos = Point3D(xpos, 4, zpos);
+    selected->seek(hoverpos, 200 * dt);
     //if ((selected->m_pos[1] < 3 && selected->m_vel[1] < 4.0) || selected->m_vel[1] < -1.0) {
       //selected->m_vel[1] -= 2 * GRAVITY * dt; // fall upwards twice as fast as downwards
     //}
@@ -380,43 +384,10 @@ void DrawGLScene(){
 
 void handleKey(SDL_KeyboardEvent key) {
   switch(key.keysym.sym) {
-  case SDLK_m:
-    if(key.state == SDL_PRESSED) {
-	SM.PlaySound(0);
-    } else {
-	SM.StopSound(0);
-    }// if
-    break;
-  case SDLK_n:
-    if(key.state == SDL_PRESSED) {
-	SM.PlaySound(1);
-    } else {
-	SM.StopSound(1);
-    }// if
-    break;
-  case SDLK_b:
-    if(key.state == SDL_PRESSED) {
-	SM.PlaySound(2);
-    } else {
-	SM.StopSound(2);
-    }// if
-    break;
   case SDLK_q:
     done = true;
     break;
-  case SDLK_t:
-    if(key.state == SDL_PRESSED) {
-       if (music_on == 0) {
-          SM.PlayMusic(0);
-          music_on = 1;
-       } else {
-	   SM.StopMusic(0);
-	   music_on = 0;
-       }
-    }// if
-    break;
   }// switch
-
 }
 
 void handleMouseMotion(SDL_MouseMotionEvent motion){
@@ -447,19 +418,38 @@ void handleMouseMotion(SDL_MouseMotionEvent motion){
                              + ((z) * camZ);
     Vector3D ray = worldPixel - eye;
 
-    RayHit* hit = NULL;
     Object* closestObj = NULL;
+    // intersect the ray and the y=0 plane
+    ypos = 0.0;
+    double minDist = (ypos - eye[1]) / ray[1];
+    xpos = eye[0] + minDist * ray[0];
+    zpos = eye[2] + minDist * ray[2];
+
+    RayHit* hit = board->raycast(eye, ray);
+    if (hit != NULL) {
+      xpos = hit->pos[0];
+      ypos = hit->pos[1];
+      zpos = hit->pos[2];
+    }
+    free(hit);
+    hit = NULL;
+
     for (std::list<Object*>::const_iterator I = objects.begin(); I != objects.end(); ++I) {
       Object* obj = *I;
+
+      RayHit* objhit = obj->raycast(eye, ray);
       if (obj->dynamic) {
-        RayHit* objhit = obj->raycast(eye, ray);
         if (objhit != NULL && (hit == NULL || hit->dist > objhit->dist)) {
-            if (hit != NULL) {
-              free(hit);
-            }
-            hit = objhit;
-            closestObj = obj;
+          if (hit != NULL) {
+            free(hit);
+          }
+          hit = objhit;
+          objhit = NULL;
+          closestObj = obj;
         }
+      }
+      if (objhit != NULL) {
+        free(objhit);
       }
     }
     if (hit != NULL) {
@@ -469,21 +459,12 @@ void handleMouseMotion(SDL_MouseMotionEvent motion){
     if (closestObj != hover) {
       if (hover != NULL) {
         // moused off of something
-        //SM.StopSound(0);
       }
       if (closestObj != NULL) {
         // moused onto something
-        //SM.PlaySound(0);
       }
       hover = closestObj;
     }
-
-  // intersect the ray and the y=1 plane
-  std::cerr << "The eye is " << eye << " and the ray is " << ray << std::endl;
-  ypos = 1.0;
-  double t = (ypos - eye[1]) / ray[1];
-  xpos = eye[0] + t * ray[0];
-  zpos = eye[2] + t * ray[2];
 
   //xpos += (float)(motion.x-oldx)/10.0f;
   //ypos += -(float)(motion.y-oldy)/10.0f;
@@ -499,23 +480,25 @@ void handleMouseButtons(SDL_MouseButtonEvent button){
       selected = hover;
       if (selected != NULL) {
         // do something
-        SM.PlaySound(0);
       }
 	  } else {
-      SM.StopSound(0);
       selected = NULL;
     }
 	  break;
-	case 2/*MMB*/:SM.PlaySound(1);break;
-	case 3/*RMB*/: SM.PlaySound(2);break;
+	case 2/*MMB*/://SM.PlaySound(1);
+	  break;
+	case 3/*RMB*/: //SM.PlaySound(2);
+	  break;
 	}// switch
     } else { /* SDL_MOUSEBUTTONUP */
 	switch (button.button){
 	case 1:
 	  //SM.StopSound(0);
 	  break;
-	case 2: SM.StopSound(1);break;
-	case 3:SM.StopSound(2);break;
+	case 2: //SM.StopSound(1);
+	  break;
+	case 3: //SM.StopSound(2);
+	  break;
 	} // switch
     }// if ... else
 
@@ -652,11 +635,7 @@ int main(int argc, char *argv[])
 {
   Uint8* keys;
 
-  SM.LoadSound("card.wav");
-  SM.LoadSound("OBS.wav");
-  SM.LoadSound("ghost.wav");
-  SM.LoadMusic("UNREAL.S3M");
-
+  SM.LoadSound("hit.wav");
 
   // Create a new OpenGL window with the title "Cone3D Basecode" at
   // 640x480x32, fullscreen and check for errors along the way
@@ -706,7 +685,7 @@ int main(int argc, char *argv[])
   std::cerr << "Loading shaders" << std::endl;
 
   // materials
-  table = new PhongMaterial(Colour(0.8, 0.8, 0.8), Colour(1.0, 1.0, 1.0), 1);
+  table = new PhongMaterial(Colour(0.8, 0.6, 0.6), Colour(1.0, 1.0, 1.0), 1);
   Material* wood = new PhongMaterial(Colour(1.0, 0.6, 0.2), Colour(1.0, 1.0, 1.0), 1);
   Material* black = new PhongMaterial(Colour(0.0, 0.0, 0.0), Colour(1.0, 1.0, 1.0), 128);
   Material* white = new PhongMaterial(Colour(1.0, 1.0, 1.0), Colour(1.0, 1.0, 1.0), 128);
@@ -717,19 +696,19 @@ int main(int argc, char *argv[])
   Sphere* pieceprimitive = new Sphere();
 
   // objects
-  objects.push_back(new Object("board", Point3D(0, 0, 0), Vector3D(1,1,1), wood, boardprimitive, false));
+  board = new Object("board", Point3D(0, 0, 0), Vector3D(1,1,1), wood, boardprimitive, false);
+  objects.push_back(board);
 
-  double boxW = 6.0;
+  double boxW = 8.0;
   double boxH = 8.0;
   double boxBorder = 0.4;
-  double boxDepth = 3.5;
+  double boxDepth = 2.5;
   NonhierBox* boxWide = new NonhierBox(Point3D(0,0,0), Vector3D(boxW, boxDepth, boxBorder), brick, bumpProgram, brickBump);
   NonhierBox* boxTall = new NonhierBox(Point3D(0,0,0), Vector3D(boxBorder, boxDepth, boxH - 2 * boxBorder), brick, bumpProgram, brickBump);
   NonhierBox* boxBottom = new NonhierBox(Point3D(0,0,0), Vector3D(boxW - 2 * boxBorder, boxBorder, boxH - 2 * boxBorder), brick, bumpProgram, brickBump);
   double offsetX = 1.0;
   double offsetY = 4.0;
 
-  /*
   // bowl on the right
   double boxZ = 0.0;
   objects.push_back(new Object("Rbowl1", Point3D(width + offsetX, boxZ, offsetY), Vector3D(1,1,1), bowl, boxWide, false));
@@ -743,10 +722,11 @@ int main(int argc, char *argv[])
   objects.push_back(new Object("Lbowl3", Point3D(- boxW - offsetX, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
   objects.push_back(new Object("Lbowl4", Point3D(- boxW - offsetX + boxW - boxBorder, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxTall, false));
   objects.push_back(new Object("Lbowl5", Point3D(- boxW - offsetX + boxBorder, boxZ, offsetY + boxBorder), Vector3D(1,1,1), bowl, boxBottom, false));
-*/
+/*
+  */
 
   //NonhierBox* pieceprimitive = new NonhierBox(Point3D(0,0,0), Vector3D(piece_size, 0.4, piece_size));
-  for (int n = 0; n < 100; n++) {
+  for (int n = 0; n < 200; n++) {
     //double x = border + ((width - 2 * border - piece_size) * rand() / RAND_MAX);
     //double y = border + ((width - 2 * border - piece_size) * rand() / RAND_MAX);
     Material* piece_mat;
@@ -761,7 +741,7 @@ int main(int argc, char *argv[])
     }
     double x = areax + ((boxW - 2 * border) * rand() / RAND_MAX);
     double y = areay + ((boxH - 2 * border) * rand() / RAND_MAX);
-    objects.push_back(new Object("piece", Point3D(x, boxBorder + (piece_depth) * (1 + n / 2), y), Vector3D(piece_size/2.0, piece_depth/2.0, piece_size/2.0), piece_mat, pieceprimitive, true));
+    objects.push_back(new Object("piece", Point3D(x, boxDepth + (piece_depth) * (1 + n / 2), y), Vector3D(piece_size/2.0, piece_depth/2.0, piece_size/2.0), piece_mat, pieceprimitive, true));
   }
 
   viewTransform = translation(Point3D(-10.0, 9.0, -40.0)) * rotation('x', 65.0);

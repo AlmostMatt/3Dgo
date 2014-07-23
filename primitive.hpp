@@ -13,7 +13,11 @@
 #include <list>
 
 #define GRAVITY -20.0
+#define FRICTION 50.0
+#define TERMINAL 20.0
+
 #define BOARD 13
+#include "SoundManager.h"
 
 class RayHit {
 public:

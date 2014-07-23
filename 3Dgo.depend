@@ -581,7 +581,7 @@
 	<stddef.h>
 	<io.h>
 
-1405986821 source:c:\users\matthew\documents\github\3dgo\algebra.cpp
+1406157535 source:c:\users\matthew\documents\github\3dgo\algebra.cpp
 	"algebra.hpp"
 
 1405986924 c:\users\matthew\documents\github\3dgo\algebra.hpp
@@ -589,7 +589,7 @@
 	<algorithm>
 	<cmath>
 
-1406146618 source:c:\users\matthew\documents\github\3dgo\main.cpp
+1406160329 source:c:\users\matthew\documents\github\3dgo\main.cpp
 	"SoundManager.h"
 	<list>
 	"algebra.hpp"
@@ -614,7 +614,7 @@
 	"primitive.hpp"
 	"material.hpp"
 
-1406139284 c:\users\matthew\documents\github\3dgo\primitive.hpp
+1406160469 c:\users\matthew\documents\github\3dgo\primitive.hpp
 	"algebra.hpp"
 	"material.hpp"
 	<GL/glew.h>
@@ -622,6 +622,7 @@
 	<GL/gl.h>
 	<GL/glu.h>
 	<list>
+	"SoundManager.h"
 
 1406083958 c:\users\matthew\documents\github\3dgo\material.hpp
 	"algebra.hpp"
@@ -640,7 +641,7 @@
 	"primitive.hpp"
 	"algebra.hpp"
 
-1406149483 source:c:\users\matthew\documents\github\3dgo\primitive.cpp
+1406159379 source:c:\users\matthew\documents\github\3dgo\primitive.cpp
 	"primitive.hpp"
 
 1405719754 source:c:\users\matthew\documents\github\3dgo\scene.cpp
@@ -659,7 +660,7 @@
 	"algebra.hpp"
 	<GL/glu.h>
 
-1406083618 source:c:\users\matthew\documents\github\3dgo\particles.cpp
+1406158388 source:c:\users\matthew\documents\github\3dgo\particles.cpp
 	"particles.h"
 
 1374502400 c:\program files (x86)\codeblocks\mingw\include\gl\glew.h

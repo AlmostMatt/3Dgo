@@ -25,7 +25,7 @@ void emitter::emit(Point3D pos, Vector3D v, double s=1.0, double time=1.0, Colou
     p->scale = s;
     p->col = col;
     num_living++;
-    std::cerr << "New particle has position " << particles[num_living]->pos << " (" << p->pos << ")" << std::endl;
+    //std::cerr << "New particle has position " << particles[num_living]->pos << " (" << p->pos << ")" << std::endl;
   }
 }
 
@@ -71,9 +71,9 @@ void emitter::render()
   glBegin(GL_QUADS);
   for (int i=0; i<num_living; i++) {
     Particle* p = particles[i];
-    std::cerr << "Particle is at position " << p->pos << std::endl;
+    //std::cerr << "Particle is at position " << p->pos << std::endl;
 
-    glColor4d(p->col.R(), p->col.G(), p->col.B(), 1.0);
+    glColor4d(p->col.R(), p->col.G(), p->col.B(), p->life);
     double sx = 0.2 * p->scale;
     double sy = 0.2 * p->scale;
     double sz = 0.2 * p->scale;

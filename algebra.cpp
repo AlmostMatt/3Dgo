@@ -233,7 +233,6 @@ Intersection spherePlane(Point3D spherepos, Vector3D spherescale, Point3D pt1, V
 Intersection sphereBox(Point3D spherepos, Vector3D spherescale, Point3D boxpos, Vector3D boxsize)
 {
   // find the distance along each axis to the sphere ( or 0 for any axis where the sphere is between the min and max)
-  double dd = 0.0;
   Point3D pt = spherepos;
   for (int axis = 0; axis < 3; axis++) {
     if (spherepos[axis] < boxpos[axis]) {
@@ -242,9 +241,11 @@ Intersection sphereBox(Point3D spherepos, Vector3D spherescale, Point3D boxpos, 
       pt[axis] = boxpos[axis] + boxsize[axis];
     }
   }
-  double dist = ((pt - spherepos) / spherescale).length2();
+  Vector3D diff = (pt - spherepos) / spherescale;
+  double dist = diff.length2();
   if (dist < 1.0) {
-    return Intersection(pt, (spherepos - pt)/spherescale, 1 - sqrt(dist));
+    double depth = (spherescale * (diff.scaleTo(1-sqrt(dist)))).length();
+    return Intersection(pt, (spherepos - pt)/spherescale, depth);
   }
   return Intersection();
 }
@@ -254,9 +255,14 @@ Intersection sphereBox(Point3D spherepos, Vector3D spherescale, Point3D boxpos, 
 Intersection sphereSphere(Point3D pos1, Point3D pos2, Vector3D spherescale)
 {
   // find the distance along each axis to the sphere ( or 0 for any axis where the sphere is between the min and max)
-  double dist = ((pos1 - pos2) / spherescale).length2();
+  Vector3D diff = (pos1 - pos2) / spherescale;
+  double dist = diff.length2();
+  //std::cerr << "inv scaled dist is " << (pos1 - pos2) / spherescale << std::endl;
+  //std::cerr << "actual dist is " << (pos1 - pos2) << std::endl;
   if (dist < 4.0) { // two unit spheres have combined radius 2
-    return Intersection(pos1.avg(pos2), (pos1 - pos2)/spherescale, (2.0 - sqrt(dist))/2.0);
+    double depth = (spherescale * (diff.scaleTo(2.0-sqrt(dist)))).length();
+    //std::cerr << "Depth is " << depth << std::endl;
+    return Intersection(pos1.avg(pos2), (pos1 - pos2)/spherescale, depth);
   }
   return Intersection();
 }

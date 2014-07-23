@@ -23,20 +23,31 @@ Object::Object(std::string name, Point3D pos, Vector3D scale, Material* m, Primi
 
 // accelerate to reach and stop at a point
 void Object::seek(Point3D point, double accel) {
+  std::cerr << "Seeking. point is: " << point << std::endl;
+  std::cerr << "Seeking. vel was: " << m_vel << std::endl;
   Vector3D posdiff = point - m_pos;
   double speed = std::min(60.0, 5 * posdiff.length()); // tweak this.
   Vector3D vel_diff = posdiff.scaleTo(speed) - m_vel;
-  m_vel = m_vel + vel_diff;//.scaleTo(accel);
+  m_vel = m_vel + vel_diff.scaleTo(std::min(accel, vel_diff.length()));//.scaleTo(accel);
+  std::cerr << "Seeking. vel is: " << m_vel << std::endl;
+}
+
+void collide(Vector3D relvel) {
+  if (relvel.length2() > 5.0 * 5.0) {
+    std::cerr << "Collision with magnitude: " << relvel.length() << std::endl;
+    //SM.StopSound(0);
+    //SM.PlaySound(0);
+  }
 }
 
 void Object::move(double dt, std::list<Object*>& objects) {
+  bool colliding = false;
   if (dynamic) {
     double elasticity = 1.4;
     //collision check
-    // drag/ air resist / friction approximation
-    m_vel = 0.95 * m_vel;
     //gravity // input acceleration
-    m_vel = m_vel + Vector3D(0, GRAVITY * dt, 0);
+    if (m_vel[1] > - TERMINAL)
+      m_vel = m_vel + Vector3D(0, GRAVITY * dt, 0);
     //dt
     Point3D pos2 = m_pos + (dt * m_vel);
     // collision check
@@ -45,18 +56,26 @@ void Object::move(double dt, std::list<Object*>& objects) {
 
     // collide with the y=0 plane
     if (sphere1 != NULL) {
-      Intersection i = sphereBox(pos2, m_scale, Point3D(-100, -1, -100), Vector3D(200, 1, 200));
+      Intersection i = sphereBox(pos2, m_scale, Point3D(-100, -5, -100), Vector3D(200, 5, 200));
       if (!i.isNull) {
-        m_vel = m_vel - elasticity * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
-        //pos2 = m_pos;
-        pos2 = pos2 + i.norm.scaleTo(i.depth);
+        if (i.norm.dot(m_vel) < 0.0) {
+          collide(m_vel.proj(i.norm));
+          m_vel = m_vel - elasticity * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
+          //pos2 = m_pos;
+          pos2 = pos2 + i.norm.scaleTo(i.depth);
+          //std::cerr << "Moved to: " << pos2 << std::endl;
+          //std::cerr << "depth was " << i.depth << std::endl;
+          //std::cerr << "vel is now " << m_vel << std::endl;
+          colliding = true;
+        }
       }
     }
     // only collide with dynamic objects later in the list
-    bool foundThis = false;
+    bool foundThis = true;
     for (std::list<Object*>::const_iterator I = objects.begin(); I != objects.end(); ++I) {
       Object* obj2 = *I;
-      Point3D obj2pos = obj2->m_pos + dt * obj2->m_vel;
+      // the other object might collide so there is no guarantee that it will move. better to check current position of itqq
+      Point3D obj2pos = obj2->m_pos;// + dt * obj2->m_vel;
       Vector3D relvel = m_vel - obj2->m_vel; // how obj1 is moving relative to object 2
       if (obj2 == this) {
         foundThis = true;
@@ -73,6 +92,8 @@ void Object::move(double dt, std::list<Object*>& objects) {
                 //std::cerr << "m_vel is " << m_vel << " and the normal is " << i.norm << " The projected vel to norm is " << m_vel.proj(i.norm) << std::endl;
                 m_vel = m_vel - elasticity * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
                 pos2 = pos2 + i.norm.scaleTo(i.depth);
+                collide(relvel.proj(i.norm));
+                colliding = true;
               }
             }
           } else if (sphere1 != NULL && sphere2 != NULL) {
@@ -81,14 +102,28 @@ void Object::move(double dt, std::list<Object*>& objects) {
             if (!i.isNull) {
               if (i.norm.dot(relvel) < 0.0) { // collision normal is facing away from the relative motion
                 //std::cerr << "m_vel is " << m_vel << " and the normal is " << i.norm << " The projected vel to norm is " << m_vel.proj(i.norm) << std::endl;
-                // the collision actsi n the direction of the normal with magnitude a multiple of the normal vector.
+                // the collision acts in the direction of the normal with magnitude a multiple of the normal vector.
                 double a1 = m_vel.dot(i.norm);
-                double a2 = m_vel.dot(i.norm);
-                double P = (a1 - a2); // 2 * m1 * m2 * (a1 - a2 ) / (m1 + m2)
+                double a2 = obj2->m_vel.dot(i.norm);
+                // note: my normal is not normalized, so divide the result by |n|^2
+                double P = (elasticity - 1) * (a1 - a2) / i.norm.length2(); // 2 * m1 * m2 * (a1 - a2 ) / (m1 + m2)
+                if (i.depth > dt * m_vel.length()) {
+                  pos2 = m_pos;
+                } else {
+                  //pos2 = pos2 + i.norm.scaleTo(i.depth);
+                  pos2 = pos2 + m_vel.scaleTo(-i.depth);
+                }
+                //std::cerr << "combined velocity before: " << m_vel.length() + obj2->m_vel.length() << std::endl;
+                //std::cerr << "Vel1 changed from " << m_vel << " to " << P * i.norm << std::endl;
                 m_vel = m_vel - P * i.norm;
+                //std::cerr << "Vel2 changed from " << obj2->m_vel << " to " << P * i.norm << std::endl;
+                //std::cerr << "combined velocity after: " << m_vel.length() + obj2->m_vel.length() << std::endl;
+
+                //obj2->m_vel = P * i.norm;
                 obj2->m_vel = obj2->m_vel + P * i.norm;
                 //m_vel = m_vel - elasticity * m_vel.proj(i.norm); // if energy is preserved, multiple by -1.6 or -2.0 or whatever
-                pos2 = pos2 + i.norm.scaleTo(i.depth);
+                collide(relvel.proj(i.norm));
+                //colliding = true;
                 // obj2 should theoretically also be moved do this point and it's dt changed to 0?
 
                 // adjust the velocity of obj2 now (ideally a list of colliding pairs is recorded and vectors computed for each, then the sum of the vectors is the collision response as a velocity)
@@ -104,6 +139,10 @@ void Object::move(double dt, std::list<Object*>& objects) {
       //std::cout << "Object " << obj->m_name << " has transform:\n" << obj->transform << "\n";
     }
     m_pos = pos2;
+    if (colliding && m_vel.length2() > 0.0) {
+      m_vel = m_vel.scaleTo(std::max(0.0, m_vel.length() - FRICTION * dt));
+    }
+
     // if moved
     if (m_vel.length2() > 0.0) {
       transform = translation(m_pos) * scaling(m_scale);// * rotation
