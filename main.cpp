@@ -42,6 +42,8 @@ Material* table;
 int windowWidth = 1200;
 int windowHeight = 900;
 
+bool outlines = true;
+
 emitter* particles;
 
 // shader texture / framebuffer related variables
@@ -291,7 +293,9 @@ int prepareShaders() {
 
 
 void DrawGLScene(){
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    if (outlines) {
+      glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    }
     glUseProgram(0);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -354,30 +358,32 @@ void DrawGLScene(){
     }
     particles->render();
 
-    //Post Processing
-    // done drawing the scene to the buffer.
-    // draw the texture to the screen using the framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(program);
-    glBindTexture(GL_TEXTURE_2D, fbo_texture);
-    glUniform1i(uniform_fbo_texture, /*GL_TEXTURE0*/0);
-    glEnableVertexAttribArray(attribute_v_coord);
+    if (outlines) {
+      //Post Processing
+      // done drawing the scene to the buffer.
+      // draw the texture to the screen using the framebuffer
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      glClearColor(0.0, 0.0, 0.0, 1.0);
+      glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo_fbo_vertices);
-    glVertexAttribPointer(
-      attribute_v_coord,  // attribute
-      2,                  // number of elements per vertex, here (x,y)
-      GL_FLOAT,           // the type of each element
-      GL_FALSE,           // take our values as-is
-      0,                  // no extra data between each position
-      0                   // offset of first element
-    );
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    glDisableVertexAttribArray(attribute_v_coord);
+      glUseProgram(program);
+      glBindTexture(GL_TEXTURE_2D, fbo_texture);
+      glUniform1i(uniform_fbo_texture, /*GL_TEXTURE0*/0);
+      glEnableVertexAttribArray(attribute_v_coord);
 
+      glBindBuffer(GL_ARRAY_BUFFER, vbo_fbo_vertices);
+      glVertexAttribPointer(
+        attribute_v_coord,  // attribute
+        2,                  // number of elements per vertex, here (x,y)
+        GL_FLOAT,           // the type of each element
+        GL_FALSE,           // take our values as-is
+        0,                  // no extra data between each position
+        0                   // offset of first element
+      );
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      glDisableVertexAttribArray(attribute_v_coord);
+    }
     SDL_GL_SwapBuffers(); // Swap the buffers
 }
 
@@ -386,6 +392,12 @@ void handleKey(SDL_KeyboardEvent key) {
   switch(key.keysym.sym) {
   case SDLK_q:
     done = true;
+    break;
+  case SDLK_s:
+    if(key.state == SDL_PRESSED) {
+    outlines = !outlines;
+      } else {
+      }// if
     break;
   }// switch
 }
