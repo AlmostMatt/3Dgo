@@ -81,8 +81,6 @@
 		<Unit filename="particles.h" />
 		<Unit filename="primitive.cpp" />
 		<Unit filename="primitive.hpp" />
-		<Unit filename="scene.cpp" />
-		<Unit filename="scene.hpp" />
 		<Unit filename="shader.frag" />
 		<Unit filename="shader.vert" />
 		<Unit filename="tm.wav" />
